@@ -303,7 +303,7 @@ amora/
 ├── amora_core.c      # Core engine — hash map, WAL, bloom, skip list, slab
 ├── amora_core.wasm   # Compiled WebAssembly binary
 ├── amora.js          # Node.js binding — workers, caching, serialization
-└── teste.js          # Full test suite with stress and benchmarks
+└── test.js          # Full test suite with stress and benchmarks
 ```
 
 ---
@@ -311,7 +311,7 @@ amora/
 ## 🧪 Running Tests
 
 ```bash
-node teste.js
+node test.js
 ```
 
 The test suite covers: heartbeat, set/get/has/delete, large values (512 KB), key/value size validation, update / 1000 rewrites, mget, atomic batch, batch rollback (single and repeated), prefix scan, fragmentation + GC, snapshot export/import with CRC corruption detection, stats, stress (100K keys), and the internal 1M-op C benchmark.
