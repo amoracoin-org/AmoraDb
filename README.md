@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://github.com/amoracoin-org/AmoraDb/assets/amoradb-logo.jpeg" alt="AmoraDB" width="180"/>
+<img src="https://github.com/amoracoin-org/AmoraDb/blob/main/assets/amoradb-logo.jpeg" alt="AmoraDB" width="180"/>
 
 # AmoraDB
 
