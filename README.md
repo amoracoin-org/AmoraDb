@@ -105,11 +105,11 @@ This benchmark covers:
 ┌────────────────────▼────────────────────────────┐
 │                amora_core.c → .wasm             │  Core Engine
 │                                                 │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐      │
-│  │ Shard 0  │  │ Shard 1  │  │  ...63   │      │  64 Shards
-│  │ SwissMap │  │ SwissMap │  │ SwissMap │      │
-│  │ Bloom    │  │ Bloom    │  │ Bloom    │      │  256KB Bloom/shard
-│  └──────────┘  └──────────┘  └──────────┘      │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐       │
+│  │ Shard 0  │  │ Shard 1  │  │  ...63   │       │  64 Shards
+│  │ SwissMap │  │ SwissMap │  │ SwissMap │       │
+│  │ Bloom    │  │ Bloom    │  │ Bloom    │       │  256KB Bloom/shard
+│  └──────────┘  └──────────┘  └──────────┘       │
 │                                                 │
 │  ┌──────────────────────────────────────────┐   │
 │  │         Skip List  (16 levels)           │   │  Sorted index
