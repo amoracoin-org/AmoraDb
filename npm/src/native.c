@@ -46,27 +46,48 @@ typedef uintptr_t uptr;
 // ============================================================
 // MEMORY
 // ============================================================
-static u8* _heap = NULL;
-static size_t _heap_size = 0;
-static size_t _heap_ptr = 0;
+typedef struct Chunk {
+    u8* mem;
+    size_t size;
+    size_t used;
+    struct Chunk* next;
+} Chunk;
+
+static Chunk* _chunk_head = NULL;
+static Chunk* _chunk_cur  = NULL;
 
 static void* mem_alloc(size_t sz) {
     sz = (sz + 15) & ~15;
-    if (_heap_ptr + sz > _heap_size) {
-        size_t new_size = _heap_size ? _heap_size * 2 : 128 * 1024 * 1024;
-        u8* new_heap = (u8*)realloc(_heap, new_size);
-        if (!new_heap) return NULL;
-        _heap = new_heap;
-        _heap_size = new_size;
+    if (!_chunk_cur || _chunk_cur->used + sz > _chunk_cur->size) {
+        size_t base = _chunk_cur ? (_chunk_cur->size * 2) : (128u * 1024u * 1024u);
+        size_t new_size = base;
+        if (new_size < sz) new_size = sz;
+        Chunk* c = (Chunk*)malloc(sizeof(Chunk));
+        if (!c) return NULL;
+        c->mem = (u8*)malloc(new_size);
+        if (!c->mem) { free(c); return NULL; }
+        c->size = new_size;
+        c->used = 0;
+        c->next = NULL;
+        if (!_chunk_head) _chunk_head = c;
+        if (_chunk_cur) _chunk_cur->next = c;
+        _chunk_cur = c;
     }
-    void* ptr = _heap + _heap_ptr;
-    _heap_ptr += sz;
+    void* ptr = _chunk_cur->mem + _chunk_cur->used;
+    _chunk_cur->used += sz;
     return ptr;
 }
 
 static void mem_free_all(void) {
-    if (_heap) { free(_heap); _heap = NULL; }
-    _heap_size = _heap_ptr = 0;
+    Chunk* c = _chunk_head;
+    while (c) {
+        Chunk* nx = c->next;
+        if (c->mem) free(c->mem);
+        free(c);
+        c = nx;
+    }
+    _chunk_head = NULL;
+    _chunk_cur  = NULL;
 }
 
 #define MP(off) ((u8*)(uptr)(off))
@@ -86,33 +107,35 @@ static u64 mix64(u64 a, u64 b) {
     return (hh + (mid >> 32)) ^ ((ll & 0xFFFFFFFFULL) | (mid << 32));
 }
 
+static u32 r4(const u8* p) { u32 v; memcpy(&v, p, 4); return v; }
+static u64 r8(const u8* p) { u64 v; memcpy(&v, p, 8); return v; }
+
 static u32 hash32(const u8* p, u32 len) {
-    u64 h = RS ^ len;
-    if (len <= 8) {
+    u64 h = RS ^ (u64)len;
+
+    u32 i = len;
+    if (i <= 8u) {
         u64 a = 0;
-        if (len >= 4) {
-            a = ((u64)p[0]) | ((u64)p[1] << 8) | ((u64)p[2] << 16) | ((u64)p[3] << 24);
-            if (len > 4) a |= ((u64)p[len-4] << 32) | ((u64)p[len-3] << 40) | ((u64)p[len-2] << 48) | ((u64)p[len-1] << 56);
-        } else {
-            for (u32 i = 0; i < len; i++) a |= ((u64)p[i] << (i * 8));
+        if (i >= 4u) {
+            a = ((u64)r4(p) << 32) | (u64)r4(p + i - 4u);
+        } else if (i > 0u) {
+            a = ((u64)p[0] << 16) | ((u64)p[i >> 1] << 8) | (u64)p[i - 1u];
         }
         h = mix64(h ^ RM1, a ^ RM2);
+    } else if (i <= 16u) {
+        h = mix64(r8(p) ^ RM1, r8(p + i - 8u) ^ h);
     } else {
-        const u8* end = p + (len & ~15);
-        while (p < end) {
-            u64 a = ((u64*)p)[0], b = ((u64*)p)[1];
-            h = mix64(a ^ RM1, b ^ h);
-            p += 16;
+        const u8* q = p;
+        while (i > 16u) {
+            h = mix64(r8(q) ^ RM1, r8(q + 8u) ^ h);
+            q += 16u;
+            i -= 16u;
         }
-        if (len & 15) {
-            u64 a = 0, b = 0;
-            for (size_t i = 0; i < 8 && p + i < p + len; i++) a |= ((u64)p[i] << (i * 8));
-            for (size_t i = 0; i < 8 && p + len - 8 + i < p + len; i++) b |= ((u64)p[len - 8 + i] << (i * 8));
-            h = mix64(a ^ RM1, b ^ h);
-        }
+        h = mix64(r8(q + i - 16u) ^ RM1, r8(q + i - 8u) ^ h);
     }
+
     u32 r = (u32)(h ^ (h >> 32));
-    return r ? r : 1;
+    return r ? r : 1u;
 }
 
 #define H2(h) ((h) & 0x7F)
@@ -231,7 +254,11 @@ static inline void xcp(u8* d, const u8* s, u32 n) {
         _mm_storeu_si128((__m128i*)(d + i), v);
     }
 #endif
-    for (; i + 8u <= n; i += 8u) *(u64*)(d + i) = *(const u64*)(s + i);
+    for (; i + 8u <= n; i += 8u) {
+        u64 v;
+        memcpy(&v, s + i, 8);
+        memcpy(d + i, &v, 8);
+    }
     for (; i < n; i++) d[i] = s[i];
 }
 
@@ -343,13 +370,15 @@ static int shard_set(Shard* sh, const u8* k, u32 kl, const u8* v, u32 vl, u32 fh
             
             Slot* s = sh_slot(sh, si);
             if (s->hash == fh && s->klen == kl && memcmp(slot_key(s), k, kl) == 0) {
-                if (vl <= s->vcap) {
+                if (vl + 1u <= s->vcap) {
                     xcp(MP(s->voff), v, vl);
+                    MP(s->voff)[vl] = 0;
                 } else {
                     u32 ncap = 0;
-                    u32 vo = blk_alloc(vl, &ncap);
+                    uptr vo = blk_alloc(vl + 1u, &ncap);
                     if (!vo) return 0;
                     xcp(MP(vo), v, vl);
+                    MP(vo)[vl] = 0;
                     s->voff = vo; s->vlen = vl; s->vcap = ncap;
                 }
                 s->vlen = vl;
@@ -372,9 +401,10 @@ do_insert: {
         xcp(MP(ko), k, kl);
     }
     
-    vo = blk_alloc(vl > 0 ? vl : 1, &vcap);
+    vo = blk_alloc(vl + 1u, &vcap);
     if (!vo) { if (ko) {} return 0; }
     xcp(MP(vo), v, vl);
+    MP(vo)[vl] = 0;
     
     u32 target = (first_del >= 0) ? (u32)first_del : first_empty;
     if (first_del >= 0) sh->deleted--;
@@ -480,13 +510,14 @@ static napi_value make_null(napi_env env) {
     return result;
 }
 
-static void get_string(napi_env env, napi_value val, char* buf, size_t* len) {
-    size_t slen;
+static int get_string_checked(napi_env env, napi_value val, char* buf, size_t max, size_t* out_len) {
+    size_t slen = 0;
     napi_get_value_string_utf8(env, val, NULL, 0, &slen);
-    if (slen > *len) slen = *len;
+    if (slen > max) return 0;
     napi_get_value_string_utf8(env, val, buf, slen + 1, &slen);
     buf[slen] = 0;
-    *len = slen;
+    *out_len = slen;
+    return 1;
 }
 
 // ============================================================
@@ -508,9 +539,9 @@ static napi_value native_set(napi_env env, napi_callback_info info) {
     
     char kbuf[MAX_KEY_SIZE + 1];
     char vbuf[MAX_VALUE_SIZE + 1];
-    size_t klen = MAX_KEY_SIZE, vlen = MAX_VALUE_SIZE;
-    get_string(env, argv[0], kbuf, &klen);
-    get_string(env, argv[1], vbuf, &vlen);
+    size_t klen = 0, vlen = 0;
+    if (!get_string_checked(env, argv[0], kbuf, MAX_KEY_SIZE, &klen)) return make_bool(env, false);
+    if (!get_string_checked(env, argv[1], vbuf, MAX_VALUE_SIZE, &vlen)) return make_bool(env, false);
     
     if (klen == 0 || klen > MAX_KEY_SIZE) return make_bool(env, false);
     if (vlen > MAX_VALUE_SIZE) return make_bool(env, false);
@@ -519,7 +550,7 @@ static napi_value native_set(napi_env env, napi_callback_info info) {
     u32 si = HSHARD(fh);
     
     shard_lock(&_shards[si]);
-    int ok = shard_set(&_shards[si], (u8*)kbuf, (u32)klen, (u8*)vbuf, (u32)(vlen + 1u), fh);
+    int ok = shard_set(&_shards[si], (u8*)kbuf, (u32)klen, (u8*)vbuf, (u32)vlen, fh);
     shard_unlock(&_shards[si]);
     
     if (ok) amora_inc_u64(&_ops_total);
@@ -532,8 +563,8 @@ static napi_value native_get(napi_env env, napi_callback_info info) {
     napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
     
     char kbuf[MAX_KEY_SIZE + 1];
-    size_t klen = MAX_KEY_SIZE;
-    get_string(env, argv[0], kbuf, &klen);
+    size_t klen = 0;
+    if (!get_string_checked(env, argv[0], kbuf, MAX_KEY_SIZE, &klen)) return make_null(env);
     
     if (klen == 0 || klen > MAX_KEY_SIZE) return make_null(env);
     
@@ -555,8 +586,8 @@ static napi_value native_has(napi_env env, napi_callback_info info) {
     napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
     
     char kbuf[MAX_KEY_SIZE + 1];
-    size_t klen = MAX_KEY_SIZE;
-    get_string(env, argv[0], kbuf, &klen);
+    size_t klen = 0;
+    if (!get_string_checked(env, argv[0], kbuf, MAX_KEY_SIZE, &klen)) return make_bool(env, false);
 
     if (klen == 0 || klen > MAX_KEY_SIZE) return make_bool(env, false);
     
@@ -577,8 +608,8 @@ static napi_value native_delete(napi_env env, napi_callback_info info) {
     napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
     
     char kbuf[MAX_KEY_SIZE + 1];
-    size_t klen = MAX_KEY_SIZE;
-    get_string(env, argv[0], kbuf, &klen);
+    size_t klen = 0;
+    if (!get_string_checked(env, argv[0], kbuf, MAX_KEY_SIZE, &klen)) return make_bool(env, false);
 
     if (klen == 0 || klen > MAX_KEY_SIZE) return make_bool(env, false);
     

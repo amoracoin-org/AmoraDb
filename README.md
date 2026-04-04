@@ -175,7 +175,7 @@ amora/
 node test.js
 ```
 
-The test suite covers: heartbeat, set/get/has/delete, large values (512 KB), key/value size validation, stress (100K keys), and the native 1M-op benchmark.
+The test suite covers: heartbeat, set/get/has/delete, updates, large values (512 KB), key/value size validation, and a stress run (50K keys).
 
 ---
 

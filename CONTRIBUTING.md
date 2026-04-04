@@ -22,22 +22,18 @@ Please follow our Code of Conduct in all your interactions with the project.
 ### Prerequisites
 
 *   **Node.js**: Version 18 or higher.
-*   **Emscripten** or **wasi-sdk**: To compile the C core to WebAssembly.
+*   **Python 3**: Required by `node-gyp`.
+*   **C/C++ toolchain**:
+    *   Windows: Visual Studio 2022 (or Build Tools) with “Desktop development with C++”
+    *   macOS: Xcode Command Line Tools
+    *   Linux: `gcc`/`g++` or `clang`
 
 ### Building from Source
 
-To build the `amora_core_mt_simd.wasm` binary with full multi-threading and SIMD support:
+To build the native addon:
 
 ```bash
-clang --target=wasm32 -O3 -nostdlib -std=c11 \
-  -msimd128 -matomics -mbulk-memory \
-  -fvisibility=hidden -ffunction-sections -fdata-sections \
-  -Wl,--no-entry -Wl,--export-dynamic \
-  -Wl,--import-memory -Wl,--shared-memory \
-  -Wl,--max-memory=4294967296 \
-  -Wl,--gc-sections -Wl,--allow-undefined -Wl,--lto-O3 \
-  -flto -DCACHE_LINE=256 \
-  -o amora_core_mt_simd.wasm amora_core.c
+npm install
 ```
 
 ### Running Tests
@@ -55,17 +51,15 @@ The test suite covers performance benchmarks, stress tests, and core functionali
 ### C Core (`amora_core.c`)
 
 *   Standard C11.
-*   No standard library dependencies (`-nostdlib`).
-*   Use `u8`, `u16`, `u32`, `u64` for fixed-width integers.
-*   Optimize for performance: use `INLINE` for small functions and minimize allocations.
-*   Maintain thread safety using `_Atomic` types and memory ordering where necessary.
+*   Use `uint8_t`, `uint16_t`, `uint32_t`, `uint64_t`, `uintptr_t` for fixed-width integers and pointers.
+*   Keep the build compatible with MSVC/clang/gcc (avoid compiler-specific builtins where possible).
+*   Prefer safe unaligned loads/stores via `memcpy` where required (especially for ARM).
 
-### Node.js Binding (`amora.js`)
+### Node.js Binding (Native Addon)
 
 *   Follow standard Node.js practices.
-*   Ensure backward compatibility with older Node.js versions if possible (minimum v18).
-*   Maintain the high-performance philosophy: avoid unnecessary copying and allocations.
-*   Use `SharedArrayBuffer` for multi-threaded communication.
+*   Maintain the high-performance philosophy: avoid unnecessary copies and allocations.
+*   Keep the public API stable across releases.
 
 ## Documentation
 

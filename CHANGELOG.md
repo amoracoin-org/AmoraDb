@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.5] - 2026-04-04
+
+### Fixed
+- Native addon: enforce key/value byte length limits (rejects oversize inputs instead of silently truncating).
+- Native addon: fixed hashing to avoid out-of-bounds reads (stabilizes lookups under load).
+
+## [2.0.4] - 2026-04-04
+
+### Fixed
+- Native addon: replaced moving `realloc`-based arena with a non-moving chunked arena to prevent access violations during initialization on Windows.
+
+## [2.0.3] - 2026-04-04
+
+### Fixed
+- Native addon: fixed bump allocator growth logic to prevent out-of-bounds writes under large shard allocations.
+- Native addon: avoided unaligned 64-bit loads/stores in hot paths (improves portability for ARM).
+
+### Changed
+- Test and benchmark scripts now perform real end-to-end validation and measurement for the native addon.
+
 ## [2.0.2] - 2026-04-04
 
 ### Fixed
