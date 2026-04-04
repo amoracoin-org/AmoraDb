@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://i.ibb.co/MkHcr072/IMG-20260329-WA0100.jpg" alt="AmoraDB" width="180"/>
+<img src="https://github.com/amoracoin-org/AmoraDb/assets/amoradb-logo.jpeg" alt="AmoraDB" width="180"/>
 
 # AmoraDB
 
@@ -14,6 +14,14 @@
 [![Version](https://img.shields.io/badge/version-2.0-ff69b4)](#)
 
 </div>
+
+---
+
+### 📖 Documentation
+
+- **[CHANGELOG.md](CHANGELOG.md)**: Track all notable changes and version history.
+- **[CONTRIBUTING.md](CONTRIBUTING.md)**: Guide for setting up development environment and contributing code.
+- **[SPEC.md](SPEC.md)**: Deep dive into the internal architecture, sharding, and binary formats.
 
 ---
 
@@ -108,7 +116,7 @@ Benchmarks run with the built-in `db.bench(1_000_000)` harness (C-level, 1M oper
 ### Prerequisites
 
 - Node.js ≥ 18
-- A pre-compiled `amora_core.wasm` (or build from source — see below)
+- A pre-compiled `amora_core_mt_simd.wasm` (or build from source — see below)
 
 ### Installation
 
@@ -199,6 +207,7 @@ console.log(`Imported ${count} entries`);
 
 | Method | Returns | Description |
 |---|---|---|
+| `db.heartbeat()` | `boolean` | Check if WASM core is responsive |
 | `db.set(key, value)` | `void` | Insert or update a key |
 | `db.get(key)` | `string\|null` | Retrieve a value |
 | `db.has(key)` | `boolean` | Check existence (uses bloom filter) |
@@ -220,7 +229,9 @@ console.log(`Imported ${count} entries`);
 | `db.persist()` | `void` | Flush + WAL write |
 | `db.restore()` | `void` | Reload from WAL |
 | `db.reset(cap?)` | `void` | Wipe and reinitialize |
-| `db.close()` | `Promise<void>` | Flush, persist, terminate workers |
+| `db.close()` | `Promise<void>` | Async: flush, persist, terminate workers |
+| `db.import(buf)` | `number` | Import snapshot buffer |
+| `db.export(max?)` | `Buffer` | Export database to snapshot buffer |
 
 ### Observability
 
@@ -302,7 +313,7 @@ clang --target=wasm32 -O3 -nostdlib -std=c11 \
 ```
 amora/
 ├── amora_core.c      # Core engine — hash map, WAL, bloom, skip list, slab
-├── amora_core.wasm   # Compiled WebAssembly binary
+├── amora_core_mt_simd.wasm   # Compiled WebAssembly binary — multi-threaded, SIMD acceleration
 ├── amora.js          # Node.js binding — workers, caching, serialization
 └── test.js          # Full test suite with stress and benchmarks
 ```
