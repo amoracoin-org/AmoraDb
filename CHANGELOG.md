@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Buffered Writes**: Added command buffer (512KB) for high-throughput asynchronous writes.
 - **Snapshot Export/Import**: Full database snapshots with per-record CRC32C checksums.
 - **RapidHash**: Switched to RapidHash for improved hash distribution and performance.
+- **Real-world Benchmark**: Introduced `benchmark.js` for accurate performance profiling including JS bridge overhead and latency percentiles (P50/P99).
 
 ### Changed
 - **Increased Limits**: Maximum value size increased to 1MB (16x previous limit).
@@ -26,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Memory Management**: Optimized memory growth and boundary checks for large datasets.
 
 ### Fixed
+- **Windows WAL fix**: Optimized file-writing strategy in `amora.js` to prevent `EPERM` errors during WAL updates on Windows.
 - Improved race condition handling in multi-threaded environments using `_Atomic` types and explicit memory ordering.
 - Enhanced CRC32C performance with a slice-by-4 unrolled implementation.
 

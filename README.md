@@ -70,6 +70,24 @@ Benchmarks run with the built-in `db.bench(1_000_000)` harness (C-level, 1M oper
 | LevelDB | ~400K | ~600K | LSM · disk · C addon |
 | Redis (local) | ~500K | ~800K | TCP overhead · RAM |
 
+### Internal benchmark 1,000,000 ops (pure C)
+
+The internal benchmark measures raw performance at the C level, bypassing the Node.js bridge.
+
+### Real-World Benchmark (Node.js)
+
+For a more accurate measure of performance including JavaScript overhead and real-world latency, run:
+
+```bash
+node benchmark.js
+```
+
+This benchmark covers:
+- **JS <-> WASM Bridge**: Real overhead of calling the engine from Node.js.
+- **Latency (P50/P99)**: Tracks sub-millisecond response times.
+- **Concurrency**: Parallel execution across worker threads.
+- **Persistence**: Impact of WAL durability (Async vs Sync).
+
 > Benchmarks are illustrative. Results vary by hardware, key size, value size, and access pattern.
 >
 > ⚠️ Note: LevelDB and RocksDB are disk-first engines optimized for persistence and compaction. Redis includes TCP overhead. This comparison reflects raw in-process throughput only — not overall capability. Choose the right tool for your use case.

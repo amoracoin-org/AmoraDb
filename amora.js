@@ -334,35 +334,17 @@ function makeWalHandlers(walPath, walSync) {
   return {
 
     flush(ptr, len, memBuffer) {
-
       const buf = Buffer.from(new Uint8Array(memBuffer, ptr, len));
-
-      const tmp = walPath + '.tmp';
-
       let fd = null;
-
       try {
-
-        fd = fs.openSync(tmp, 'w');
-
+        fd = fs.openSync(walPath, 'w');
         fs.writeSync(fd, buf);
-
         if (walSync !== false) fs.fsyncSync(fd);
-
         fs.closeSync(fd); fd = null;
-
-        fs.renameSync(tmp, walPath);
-
       } catch (err) {
-
         if (fd != null) { try { fs.closeSync(fd); } catch (_) {} }
-
-        try { fs.unlinkSync(tmp); } catch (_) {}
-
         throw err;
-
       }
-
     },
 
 
