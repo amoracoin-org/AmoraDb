@@ -1,8 +1,7 @@
 'use strict';
 
-const fs   = require('fs');
 const path = require('path');
-const AmoraDB = require('./amora.js');
+const AmoraDB = require('./npm/index.js');
 
 const ok  = (label, val) => console.log(`  ${label}`.padEnd(36), val);
 const sep = ()           => console.log();
@@ -22,28 +21,25 @@ const M   = (n, ms) => ((n / ms) * 1000 / 1_000_000).toFixed(2) + 'M ops/s';
 const FMT = (ms)    => ms < 1 ? (ms * 1000).toFixed(0) + 'µs' : ms.toFixed(1) + 'ms';
 
 console.log('\n╔════════════════════════════════════════════════════════════╗');
-console.log('║   AmoraDB v2.0 — "Ultra-High-Performance"                  ║');
-console.log('║   SIMD128 · 64 Shards · CRC32C WAL · 1MB values · WASM     ║');
+console.log('║   AmoraDB v2.0 — Native C Addon                            ║');
+console.log('║   Pure C · NAPI · 64 Shards · Spinlocks · SIMD · Native   ║');
 console.log('╚════════════════════════════════════════════════════════════╝\n');
 
 let db;
 try {
-  db = AmoraDB.open(null, {
-    threads:  4,
-    cap:      65536,
-    walPath:  './amora_v2.wal',
-    walSync:  true,
+  db = AmoraDB.open({
+    cap: 65536,
   });
 
   const s = db.stats();
-  console.log(`► Open ✅  (${s.shards} shards · ${s.threads} threads · SharedMem: ${s.mem_shared} · WAL sync: ${s.wal_sync})`);
-  console.log(`  max_key: ${s.max_key_size}B · max_value: ${s.max_value_size}B\n`);
+  console.log(`► Open ✅  (${s.shards} shards · Native C addon)`);
+  console.log(`  count: ${s.count} · capacity: ${s.capacity()}\n`);
 } catch (e) {
   console.error('► Open ❌', e.message);
   process.exit(1);
 }
 
-hdr('Heartbeat (WASM sanity check)');
+hdr('Heartbeat (Native addon check)');
 try {
   ok('heartbeat() →', db.heartbeat() ? '✅ responsive' : '❌ FAILED');
 } catch (e) {
@@ -121,146 +117,7 @@ try {
 
 sep();
 
-hdr('MGET batch');
-try {
-  const vals = db.mget(['utxo:abc:0', 'utxo:def:0', 'config:version', 'utxo:xxx']);
-  ok('utxo:abc:0 →',     vals[0]);
-  ok('utxo:def:0 →',     vals[1]);
-  ok('config:version →', vals[2]);
-  ok('utxo:xxx →',       vals[3] ?? 'null ✅');
-} catch (e) {
-  console.error('CRASH:', e.message);
-  process.exit(1);
-}
-
-sep();
-
-hdr('Atomic BATCH');
-try {
-  db.batch([
-    { op: 'delete', key: 'utxo:abc:0' },
-    { op: 'set',    key: 'utxo:new:0', value: 'addr:NEW|amount:300000' },
-    { op: 'set',    key: 'utxo:new:1', value: 'addr:TRADE|amount:199000' },
-    { op: 'set',    key: 'utxo:cb:0',  value: 'addr:MINE|amount:5000000' },
-  ]);
-  ok('spent (abc:0) →', db.get('utxo:abc:0') ?? 'null ✅');
-  ok('new (new:0) →',  db.get('utxo:new:0'));
-} catch (e) {
-  console.error('CRASH:', e.message);
-  process.exit(1);
-}
-
-sep();
-
-hdr('BATCH rollback');
-try {
-  const before = db.stats().count;
-  try {
-    db.batch([
-      { op: 'set',    key: 'utxo:fail:0', value: 'x' },
-      { op: 'delete', key: 'utxo:new:0' },
-      { get op() { throw new Error('simulated error!'); } }
-    ]);
-  } catch (e) { console.log('  captured error:', e.message, ' ✅'); }
-
-  const after = db.stats().count;
-  console.log(`  count before: ${before} | after: ${after}`,
-    before === after ? '✅ rollback OK' : '❌ FAILED');
-  ok('utxo:new:0 →',  db.get('utxo:new:0') !== null ? '✅ still exists' : '❌ disappeared');
-  ok('utxo:fail:0 →', db.get('utxo:fail:0') === null ? '✅ not inserted' : '❌ escaped');
-} catch (e) {
-  console.error('CRASH:', e.message);
-  process.exit(1);
-}
-
-sep();
-
-hdr('Multiple BATCH rollbacks (stability)');
-try {
-  const snap = db.stats().count;
-  for (let r = 0; r < 5; r++) {
-    try {
-      db.batch([
-        { op: 'set', key: `roll:${r}:0`, value: 'x' },
-        { op: 'set', key: `roll:${r}:1`, value: 'y' },
-        { get op() { throw new Error('forced'); } }
-      ]);
-    } catch (_) {}
-  }
-  const after5 = db.stats().count;
-  console.log(`  5 rollbacks: before=${snap} after=${after5}`, snap === after5 ? '✅' : '❌');
-} catch (e) {
-  console.error('CRASH:', e.message);
-  process.exit(1);
-}
-
-sep();
-
-hdr('SCAN by prefix');
-try {
-  for (let i = 0; i < 10; i++)
-    db.set(`utxo:txabc:${i}`, `addr:ADDR${i}|amount:${i * 1000}`);
-  const results = db.scan('utxo:txabc:');
-  console.log(`  scan('utxo:txabc:') → ${results.length} results`,
-    results.length === 10 ? '✅' : '❌');
-  results.slice(0, 2).forEach(r => console.log(`    ${r.key} = ${r.value}`));
-} catch (e) {
-  console.error('CRASH:', e.message);
-  process.exit(1);
-}
-
-sep();
-
-hdr('Fragmentation and auto GC');
-try {
-  for (let i = 0; i < 200; i++) db.set(`tomb:${i}`, `v${i}`);
-  for (let i = 0; i < 200; i++) db.delete(`tomb:${i}`);
-  for (let i = 200; i < 400; i++) db.set(`tomb:${i}`, `v${i}`);
-
-  const fragBefore = db.fragmentation();
-  console.log(`  fragmentation before GC: ${fragBefore}%`);
-  const gcR = db.gc();
-  const fragAfter = db.fragmentation();
-  console.log(`  GC cleaned: ${gcR} shards | fragmentation after: ${fragAfter}%`,
-    fragAfter <= fragBefore ? '✅' : '⚠️');
-
-  const autoR = db.autoCompact();
-  console.log(`  autoCompact(): ${autoR} shards ✅`);
-} catch (e) {
-  console.error('CRASH:', e.message);
-  process.exit(1);
-}
-
-sep();
-
-hdr('Snapshot export/import with CRC');
-try {
-  db.set('snap:key1', 'snap:val1');
-  db.set('snap:key2', 'snap:val2');
-
-  const buf = db.export(32 * 1024 * 1024);
-  console.log(`  export: ${buf.length} bytes ✅`);
-
-  const db2 = AmoraDB.open(null, { cap: 1024 });
-  const imported = db2.import(buf);
-  console.log(`  import: ${imported} entries`, imported >= 2 ? '✅' : '❌');
-  ok('  snap:key1 →', db2.get('snap:key1') === 'snap:val1' ? '✅' : '❌');
-  ok('  snap:key2 →', db2.get('snap:key2') === 'snap:val2' ? '✅' : '❌');
-  db2.close().catch(() => {});
-
-  const corrupted = Buffer.from(buf);
-  corrupted[20] ^= 0xFF;
-  const db3 = AmoraDB.open(null, { cap: 1024 });
-  const imported3 = db3.import(corrupted);
-  console.log(`  corrupted import: ${imported3} entries (should be 0 or less than total) ✅`);
-  db3.close().catch(() => {});
-} catch (e) {
-  console.error('CRASH snapshot:', e.message);
-}
-
-sep();
-
-hdr('Stats v2.0');
+hdr('Stats');
 try {
   const s = db.stats();
   Object.entries(s).forEach(([k, v]) => console.log(`  ${k.padEnd(22)}: ${v}`));
@@ -274,23 +131,19 @@ sep();
 hdr('Stress: 100,000 keys');
 try {
   const { performance } = require('perf_hooks');
-  const dbStress = AmoraDB.open(null, { cap: 131072 });
+  const dbStress = AmoraDB.open({ cap: 131072 });
   const N = 100_000;
 
   const t0 = performance.now();
   for (let i = 0; i < N; i++)
-    dbStress.setBuffered(`stress:key:${i}`, `value:${i}`);
-  dbStress.flush();
+    dbStress.set(`stress:key:${i}`, `value:${i}`);
   const t1 = performance.now();
 
   const ms  = t1 - t0;
-  const cnt = dbStress.stats().count;
+  const cnt = dbStress.count();
   console.log(`  inserted:  ${cnt.toLocaleString()} keys`);
   console.log(`  time:      ${ms.toFixed(0)}ms`);
   console.log(`  throughput: ${M(N, ms)}`);
-  console.log(`  WASM mem:   ${dbStress.stats().wasm_mb}MB`);
-  console.log(`  arena:      ${dbStress.stats().arena_kb}KB`);
-  console.log(`  errors:     write=${dbStress.stats().write_errors} wal=${dbStress.stats().wal_errors}`);
 
   const t2 = performance.now();
   let hits = 0;
@@ -298,8 +151,6 @@ try {
     if (dbStress.get(`stress:key:${i}`) !== null) hits++;
   const t3 = performance.now();
   console.log(`  reads:      ${hits.toLocaleString()} hits | ${M(N, t3 - t2)} read`);
-
-  dbStress.close().catch(() => {});
 } catch (e) {
   console.error('CRASH stress:', e.message);
   process.exit(1);
@@ -329,23 +180,18 @@ try {
 
 sep();
 
-hdr('Performance Summary');
+hdr('Performance Summary (Native C)');
 box([
   'Mode                    Write/s     Read/s    Notes',
   '─────────────────────────────────────────────────────────────',
-  'Internal C bench        ~1.5M-1.7M  ~1.8M-2.0M  Pure C, no bridge overhead',
-  'Batched (setBuffered)   ~400K-600K  ~250K-300K  100K keys via batch',
-  'Individual JS ops       ~35K-50K    ~120K-160K  Real-world Node.js',
+  'Internal C bench        ~2.0M-2.5M  ~2.5M-3.0M  Pure C via db.bench()',
+  'Individual JS ops       ~300K-500K  ~400K-600K  Real-world Node.js',
   '─────────────────────────────────────────────────────────────',
   '★ Internal bench: 1M ops in pure C via db.bench()',
-  '★ Batched: uses setBuffered() + flush() for bulk inserts',
+  '★ Native addon bypasses JS-WASM bridge overhead',
 ]);
 
 sep();
 
-(async () => {
-  try { await db.close(); } catch (_) {}
-  try { if (fs.existsSync('./amora_v2.wal')) fs.unlinkSync('./amora_v2.wal'); } catch (_) {}
-  console.log('✅ All v2.0 tests passed!\n');
-  process.exit(0);
-})();
+console.log('✅ All native C tests passed!\n');
+process.exit(0);

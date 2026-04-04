@@ -1,17 +1,17 @@
 {
   "name": "amoradbx",
   "version": "2.0.0",
-  "description": "Ultra-high-performance embedded key-value engine (C -> WebAssembly) for Node.js",
-  "main": "amora.js",
+  "description": "Ultra-High-Performance Embedded Key-Value Store - Native C addon",
+  "main": "npm/index.js",
   "files": [
-    "amora.js",
-    "amora_core_mt_simd.wasm",
+    "npm/",
     "LICENSE",
     "README.md",
     "CHANGELOG.md",
     "CONTRIBUTING.md",
     "SPEC.md",
-    "benchmark.js"
+    "benchmark.js",
+    "test.js"
   ],
   "scripts": {
     "test": "node test.js",
@@ -22,10 +22,8 @@
     "kv",
     "key-value",
     "embedded",
-    "wasm",
-    "webassembly",
-    "simd",
-    "wal",
+    "native",
+    "performance",
     "swiss-table"
   ],
   "license": "MIT",
