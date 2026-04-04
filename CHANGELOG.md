@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Snapshot Export/Import**: Full database snapshots with per-record CRC32C checksums.
 - **RapidHash**: Switched to RapidHash for improved hash distribution and performance.
 - **Real-world Benchmark**: Introduced `benchmark.js` for accurate performance profiling including JS bridge overhead and latency percentiles (P50/P99).
+- **npm package**: Added `package.json` for publishing as `amoradb`.
 
 ### Changed
 - **Increased Limits**: Maximum value size increased to 1MB (16x previous limit).

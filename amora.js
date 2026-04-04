@@ -1,19 +1,14 @@
 'use strict';
 
-
-
 const fs   = require('fs');
 
 const path = require('path');
 
 const { Worker, isMainThread, parentPort, workerData } = require('worker_threads');
 
-
-
 const DEC = new TextDecoder();
 
 const ENC = new TextEncoder();
-
 
 const CMD_BUF_SIZE      = 1 << 19;
 
@@ -25,12 +20,9 @@ const WORKER_TIMEOUT_MS = 60_000;
 
 const WAL_PERSIST_EVERY = 128;
 
-
 let _MAX_KEY_SIZE   = 4096;
 
 let _MAX_VALUE_SIZE = 1 << 20;
-
-
 
 const SC_SIZE  = 16384;
 
@@ -45,7 +37,6 @@ const _scAge   = new Uint32Array(SC_SIZE);
 let   _scTick  = 0;
 
 let   _lastKey = null, _lastBytes = null;
-
 
 function fnv1a(s) {
 
@@ -62,7 +53,6 @@ function fnv1a(s) {
   return h >>> 0;
 
 }
-
 
 function enc(s) {
 
@@ -92,14 +82,9 @@ function enc(s) {
 
 }
 
-
-
-
 const _encBuf = new Uint8Array(MAX_THREADS > 0 ? 65536 : 4096);
 
-
 function writeStr(dst, off, s) {
-
 
   const len = s.length;
 
@@ -117,8 +102,6 @@ function writeStr(dst, off, s) {
 
   if (isAscii) return off;
 
-
-
   off -= len;
 
   const result = ENC.encodeInto(s, dst.subarray(off));
@@ -127,9 +110,7 @@ function writeStr(dst, off, s) {
 
 }
 
-
 function strByteLen(s) {
-
 
   let bytes = 0;
 
@@ -151,13 +132,11 @@ function strByteLen(s) {
 
 }
 
-
 function isBytes(x) {
 
   return x != null && (Buffer.isBuffer(x) || x instanceof Uint8Array);
 
 }
-
 
 function validateKey(kb) {
 
@@ -167,14 +146,11 @@ function validateKey(kb) {
 
 }
 
-
 function validateValue(vb) {
 
   if (vb && vb.length > _MAX_VALUE_SIZE) throw new RangeError(`AmoraDB: valor muito longo (${vb.length} > ${_MAX_VALUE_SIZE})`);
 
 }
-
-
 
 function writeSet(dst, off, key, val) {
 
@@ -196,7 +172,6 @@ function writeSet(dst, off, key, val) {
 
 }
 
-
 function writeDel(dst, off, key) {
 
   const kl = strByteLen(key);
@@ -215,7 +190,6 @@ function writeDel(dst, off, key) {
 
 }
 
-
 function writeKeyOnly(dst, off, key) {
 
   const kl = strByteLen(key);
@@ -229,7 +203,6 @@ function writeKeyOnly(dst, off, key) {
   return off;
 
 }
-
 
 function writeSetBytes(dst, off, kb, vb) {
 
@@ -251,7 +224,6 @@ function writeSetBytes(dst, off, kb, vb) {
 
 }
 
-
 function writeDelBytes(dst, off, kb) {
 
   const kl = kb.length >>> 0;
@@ -270,7 +242,6 @@ function writeDelBytes(dst, off, kb) {
 
 }
 
-
 function writeKeyOnlyBytes(dst, off, kb) {
 
   const kl = kb.length >>> 0;
@@ -284,8 +255,6 @@ function writeKeyOnlyBytes(dst, off, kb) {
   return off;
 
 }
-
-
 
 let _hrtimeBase = null;
 
@@ -317,8 +286,6 @@ function makeNowFn() {
 
 }
 
-
-
 function makeWalHandlers(walPath, walSync) {
 
   if (!walPath) {
@@ -327,9 +294,7 @@ function makeWalHandlers(walPath, walSync) {
 
   }
 
-
   let _walFd = null;
-
 
   return {
 
@@ -346,7 +311,6 @@ function makeWalHandlers(walPath, walSync) {
         throw err;
       }
     },
-
 
     load(ptr, maxLen, memBuffer) {
 
@@ -370,15 +334,11 @@ function makeWalHandlers(walPath, walSync) {
 
 }
 
-
-
 if (!isMainThread && workerData && workerData.__amoraWorker) {
 
   const { wasmBytes, sharedMem, cmdBufOffset, scratchOffset, tid } = workerData;
 
   const now = makeNowFn();
-
-
 
   const sharedMemory = new WebAssembly.Memory({
 
@@ -389,8 +349,6 @@ if (!isMainThread && workerData && workerData.__amoraWorker) {
     shared: true,
 
   });
-
-
 
   const mod  = new WebAssembly.Module(wasmBytes);
 
@@ -410,22 +368,17 @@ if (!isMainThread && workerData && workerData.__amoraWorker) {
 
   });
 
-
   const e = inst.exports;
 
   if (e.db_set_worker_mode) e.db_set_worker_mode();
 
-
-
   const cmdView = new Uint8Array(sharedMem, cmdBufOffset, CMD_BUF_SIZE);
-
 
   parentPort.on('message', (msg) => {
 
     try {
 
       if (msg.type === 'exec') {
-
 
         const wasmU8 = new Uint8Array(sharedMemory.buffer);
 
@@ -442,7 +395,6 @@ if (!isMainThread && workerData && workerData.__amoraWorker) {
         wasmU8.set(new Uint8Array(sharedMem, cmdBufOffset, msg.cmdOff), cmdBufOffset);
 
         const n = e.db_mget_cmdbuf(cmdBufOffset, msg.cmdOff, 8192);
-
 
         const mgetOff = e.db_mget_buf_off ? e.db_mget_buf_off() : 0;
 
@@ -474,12 +426,9 @@ if (!isMainThread && workerData && workerData.__amoraWorker) {
 
   });
 
-
   parentPort.postMessage({ type: 'ready' });
 
 }
-
-
 
 class WorkerPool {
 
@@ -495,13 +444,11 @@ class WorkerPool {
 
     this._robin   = 0;
 
-
     for (let i = 0; i < n; i++) {
 
       const cmdBufOffset = sharedMem.byteLength - CMD_BUF_SIZE * (i + 1);
 
       const scratchOff   = 8192 * 16 + 64 + i * 8192;
-
 
       const w = new Worker(__filename, {
 
@@ -519,7 +466,6 @@ class WorkerPool {
 
       });
 
-
       w._tid        = i;
 
       w._cmdBufOff  = cmdBufOffset;
@@ -533,7 +479,6 @@ class WorkerPool {
       w._timeoutId  = null;
 
       w._pending    = null;
-
 
       w.on('message', (msg) => {
 
@@ -585,7 +530,6 @@ class WorkerPool {
 
       });
 
-
       w.on('error', (err) => {
 
         if (w._timeoutId) { clearTimeout(w._timeoutId); w._timeoutId = null; }
@@ -594,16 +538,13 @@ class WorkerPool {
 
         w._busy = false;
 
-
       });
-
 
       this._workers.push(w);
 
     }
 
   }
-
 
   _drain() {
 
@@ -616,7 +557,6 @@ class WorkerPool {
     }
 
   }
-
 
   _dispatch_to(w, task) {
 
@@ -648,7 +588,6 @@ class WorkerPool {
 
   }
 
-
   dispatch(worker, msg) {
 
     return new Promise((resolve, reject) => {
@@ -673,8 +612,6 @@ class WorkerPool {
 
   }
 
-
-
   getNextWorker() {
 
     const w = this._workers[this._robin % this._n];
@@ -685,9 +622,7 @@ class WorkerPool {
 
   }
 
-
   getWorker(idx) { return this._workers[idx % this._n]; }
-
 
   async terminate() {
 
@@ -702,8 +637,6 @@ class WorkerPool {
   }
 
 }
-
-
 
 class AmoraDB {
 
@@ -761,11 +694,9 @@ class AmoraDB {
 
     this._nThreads  = 0;
 
-
     this._tempAllocs = [];
 
   }
-
 
   static open(wasmPath, opts = {}) {
 
@@ -805,7 +736,6 @@ class AmoraDB {
 
     }
 
-
     const nThreads  = Math.min(opts.threads || 1, MAX_THREADS);
 
     const useShared = nThreads > 1;
@@ -815,7 +745,6 @@ class AmoraDB {
     const initPages  = (opts.initialPages || 4096) + extraPages;
 
     const maxPages   = opts.maxPages || 65536;
-
 
     let mem;
 
@@ -829,7 +758,6 @@ class AmoraDB {
 
     }
 
-
     const now      = makeNowFn();
 
     const walPath  = opts.walPath || null;
@@ -837,7 +765,6 @@ class AmoraDB {
     const walSync  = opts.walSync !== false;
 
     const handlers = makeWalHandlers(walPath, walSync);
-
 
     const mod  = new WebAssembly.Module(bytes);
 
@@ -865,7 +792,6 @@ class AmoraDB {
 
     });
 
-
     const db = new AmoraDB(inst, mem, handlers, opts);
 
     db._autoFlush = opts.autoFlush !== false;
@@ -874,14 +800,11 @@ class AmoraDB {
 
     db._nThreads  = nThreads;
 
-
     if (!db._e.db_init(opts.cap || 65536))
 
       throw new Error('AmoraDB: db_init falhou — memória insuficiente');
 
-
     db._setup();
-
 
     if (opts.maxMemoryBytes && db._e.db_set_memory_limit) {
 
@@ -889,11 +812,9 @@ class AmoraDB {
 
     }
 
-
     if (useShared && mem.buffer instanceof SharedArrayBuffer)
 
       db._pool = new WorkerPool(bytes, mem.buffer, nThreads);
-
 
     if (walPath && fs.existsSync(walPath)) {
 
@@ -909,11 +830,9 @@ class AmoraDB {
 
     }
 
-
     return db;
 
   }
-
 
   _setup() {
 
@@ -943,7 +862,6 @@ class AmoraDB {
 
   }
 
-
   _rebuildViews() {
 
     const buf = this._mem.buffer;
@@ -964,7 +882,6 @@ class AmoraDB {
 
   }
 
-
   _checkBuf() {
 
     if (this._viewsDirty || this._buf !== this._mem.buffer)
@@ -973,14 +890,11 @@ class AmoraDB {
 
   }
 
-
   _maybeInvalidate() {
 
     if (this._mem.buffer !== this._buf) this._viewsDirty = true;
 
   }
-
-
 
   flush() {
 
@@ -1020,8 +934,6 @@ class AmoraDB {
 
   }
 
-
-
   set(key, value) {
 
     const val = typeof value === 'string' ? value : String(value);
@@ -1060,7 +972,6 @@ class AmoraDB {
 
   }
 
-
   setBuffered(key, value) {
 
     const val = typeof value === 'string' ? value : String(value);
@@ -1090,7 +1001,6 @@ class AmoraDB {
     this._cmdOff = writeSet(this._u8cmd, this._cmdOff, key, val);
 
   }
-
 
   setBytes(keyBytes, valueBytes) {
 
@@ -1130,10 +1040,7 @@ class AmoraDB {
 
   }
 
-
   setSync(key, value) { return this.set(key, value); }
-
-
 
   get(key) {
 
@@ -1163,7 +1070,6 @@ class AmoraDB {
 
   }
 
-
   getBytes(keyBytes) {
 
     if (!isBytes(keyBytes)) throw new TypeError('getBytes: esperado Uint8Array/Buffer');
@@ -1192,8 +1098,6 @@ class AmoraDB {
 
   }
 
-
-
   has(key) {
 
     if (this._cmdOff > 0) this.flush();
@@ -1209,7 +1113,6 @@ class AmoraDB {
     return this._e.db_has_inplace(kb.length) === 1;
 
   }
-
 
   hasBytes(keyBytes) {
 
@@ -1227,7 +1130,6 @@ class AmoraDB {
 
   }
 
-
   hasPrefix(prefix) {
 
     if (this._cmdOff > 0) this.flush();
@@ -1244,7 +1146,6 @@ class AmoraDB {
 
   }
 
-
   countPrefix(prefix) {
 
     if (this._cmdOff > 0) this.flush();
@@ -1260,8 +1161,6 @@ class AmoraDB {
     return this._e.db_count_prefix(this._kbufPtr, pb.length) >>> 0;
 
   }
-
-
 
   delete(key) {
 
@@ -1297,7 +1196,6 @@ class AmoraDB {
 
   }
 
-
   deleteBytes(keyBytes) {
 
     if (!isBytes(keyBytes)) throw new TypeError('deleteBytes: esperado Uint8Array/Buffer');
@@ -1332,10 +1230,7 @@ class AmoraDB {
 
   }
 
-
   deleteSync(key) { return this.delete(key); }
-
-
 
   mget(keys) {
 
@@ -1384,7 +1279,6 @@ class AmoraDB {
     return out;
 
   }
-
 
   mgetBytes(keysBytes) {
 
@@ -1436,8 +1330,6 @@ class AmoraDB {
 
   }
 
-
-
   async mgetAsync(keys) {
 
     if (!this._pool) return this.mget(keys);
@@ -1485,8 +1377,6 @@ class AmoraDB {
     return out;
 
   }
-
-
 
   async setParallel(entries) {
 
@@ -1537,8 +1427,6 @@ class AmoraDB {
     this._checkBuf();
 
   }
-
-
 
   batch(ops) {
 
@@ -1624,8 +1512,6 @@ class AmoraDB {
 
   }
 
-
-
   scan(prefix) {
 
     if (this._cmdOff > 0) this.flush();
@@ -1641,7 +1527,6 @@ class AmoraDB {
     return this._readScan(this._e.db_scan_prefix(this._kbufPtr, pb.length));
 
   }
-
 
   range(from, to) {
 
@@ -1668,7 +1553,6 @@ class AmoraDB {
     return result;
 
   }
-
 
   _readScan(cnt) {
 
@@ -1704,8 +1588,6 @@ class AmoraDB {
 
   }
 
-
-
   export(maxBytes) {
 
     if (this._cmdOff > 0) this.flush();
@@ -1729,7 +1611,6 @@ class AmoraDB {
     return Buffer.from(this._u8raw.slice(snapPtr, snapPtr + written));
 
   }
-
 
   import(buf) {
 
@@ -1755,8 +1636,6 @@ class AmoraDB {
 
   }
 
-
-
   gc() {
 
     if (this._cmdOff > 0) this.flush();
@@ -1764,7 +1643,6 @@ class AmoraDB {
     return this._e.db_gc();
 
   }
-
 
   autoCompact() {
 
@@ -1774,21 +1652,17 @@ class AmoraDB {
 
   }
 
-
   fragmentation() {
 
     return this._e.db_fragmentation_pct ? this._e.db_fragmentation_pct() >>> 0 : 0;
 
   }
 
-
   heartbeat() {
 
     return this._e.db_heartbeat ? this._e.db_heartbeat() === 1 : true;
 
   }
-
-
 
   stats() {
 
@@ -1874,13 +1748,11 @@ class AmoraDB {
 
   }
 
-
   persist()  { this.flush(); this._e.db_persist(); }
 
   restore()  { return this._e.db_restore(); }
 
   reset(cap) { this._e.db_init(cap || 65536); this._setup(); }
-
 
   async close() {
 
@@ -1891,8 +1763,6 @@ class AmoraDB {
     if (this._pool) await this._pool.terminate();
 
   }
-
-
 
   bench(n) {
 
@@ -1990,6 +1860,5 @@ class AmoraDB {
 
 }
 
-
 module.exports = AmoraDB;
-
+

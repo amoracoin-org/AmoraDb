@@ -1,0 +1,46 @@
+{
+  "name": "amoradb",
+  "version": "2.0.0",
+  "description": "Ultra-high-performance embedded key-value engine (C -> WebAssembly) for Node.js",
+  "main": "amora.js",
+  "files": [
+    "amora.js",
+    "amora_core_mt_simd.wasm",
+    "LICENSE",
+    "README.md",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "SPEC.md",
+    "benchmark.js"
+  ],
+  "scripts": {
+    "test": "node test.js",
+    "bench": "node benchmark.js"
+  },
+  "keywords": [
+    "database",
+    "kv",
+    "key-value",
+    "embedded",
+    "wasm",
+    "webassembly",
+    "simd",
+    "wal",
+    "swiss-table"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/amoracoin-org/AmoraDb.git"
+  },
+  "bugs": {
+    "url": "https://github.com/amoracoin-org/AmoraDb/issues"
+  },
+  "homepage": "https://github.com/amoracoin-org/AmoraDb#readme",
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

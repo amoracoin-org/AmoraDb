@@ -1,6 +1,4 @@
 
-
-
 #if defined(__wasm_simd128__)
 
 #  include <wasm_simd128.h>
@@ -12,7 +10,6 @@
 #  define AMORA_SIMD 0
 
 #endif
-
 
 #if defined(__wasm_threads__) || defined(__wasm_shared_memory__)
 
@@ -29,8 +26,6 @@
 #  define AMORA_ATOMICS 0
 
 #endif
-
-
 
 typedef unsigned char      u8;
 
@@ -50,7 +45,6 @@ typedef double             f64;
 
 typedef uintptr_t          uptr;
 
-
 #if AMORA_ATOMICS
 
 typedef _Atomic(u32) au32;
@@ -65,14 +59,11 @@ typedef u64 au64;
 
 #endif
 
-
 #ifndef NULL
 
 #  define NULL ((void*)0)
 
 #endif
-
-
 
 #define INLINE      __attribute__((always_inline)) static inline
 
@@ -84,17 +75,13 @@ typedef u64 au64;
 
 #define UNLIKELY(x) __builtin_expect(!!(x), 0)
 
-
 #define PREFETCH_R(p) __builtin_prefetch((p), 0, 3)
 
 #define PREFETCH_W(p) __builtin_prefetch((p), 1, 1)
 
-
-
 #define MAX_KEY_SIZE      4096u
 
 #define MAX_VALUE_SIZE    (1u << 20)
-
 
 #define CTRL_EMPTY        0x80u
 
@@ -106,25 +93,19 @@ typedef u64 au64;
 
 #define LOAD_DEN          8u
 
-
-
 #define N_SHARDS_SHIFT    6u
 
 #define N_SHARDS          (1u << N_SHARDS_SHIFT)
 
 #define SHARD_INIT        1024u
 
-
 #define TOMB_RATIO_PCT    25u
-
 
 #ifndef AMORA_INLINE_KEY_MAX
 
 #  define AMORA_INLINE_KEY_MAX 22u
 
 #endif
-
-
 
 #define BLOOM_BITS_SHIFT  21u
 
@@ -133,8 +114,6 @@ typedef u64 au64;
 #define BLOOM_MASK        (BLOOM_BITS - 1u)
 
 #define BLOOM_BYTES       (BLOOM_BITS >> 3)
-
-
 
 #define WAL_MAGIC         0x414D5257u
 
@@ -150,22 +129,17 @@ typedef u64 au64;
 
 #define WAL_HEADER_SZ     8u
 
-
 #define KBUF_SZ           4096u
 
 #define VBUF_SZ           (MAX_VALUE_SIZE + 1u)
-
-
 
 #define SL_LEVELS         16u
 
 #define SL_MAX_NODES      (1u << 20)
 
-
 #define MAX_THREADS       8u
 
 #define SPIN_LIMIT        64u
-
 
 #define SCRATCH_PER_THREAD   8192u
 
@@ -179,25 +153,19 @@ typedef u64 au64;
 
 #define SCRATCH_MAX_RESULTS  4096u
 
-
 #define MGET_BUF_ENTRIES  8192u
 
 #define MGET_BUF_SZ       (MGET_BUF_ENTRIES * 8u)
 
-
 #define SNAP_MAGIC        0x504D4153u
 
 #define SNAP_VERSION      20u
-
-
 
 #define SLAB_CLASSES      32u
 
 #define SLAB_MIN_SIZE     16u
 
 #define SLAB_MAX_SIZE     (SLAB_MIN_SIZE << (SLAB_CLASSES - 1u))
-
-
 
 static const u32 _crc32c_tab[256] = {
 
@@ -267,13 +235,11 @@ static const u32 _crc32c_tab[256] = {
 
 };
 
-
 static u32 crc32c(const u8 *data, u32 len) {
 
     u32 crc = 0xFFFFFFFFu;
 
     u32 i = 0;
-
 
     for (; i + 4u <= len; i += 4u) {
 
@@ -294,8 +260,6 @@ static u32 crc32c(const u8 *data, u32 len) {
     return crc ^ 0xFFFFFFFFu;
 
 }
-
-
 
 #if AMORA_ATOMICS
 
@@ -359,21 +323,17 @@ INLINE u64  au64_fetch_add_relaxed(au64 *p, u64 v)   { u64 o = *p; *p = o + v; r
 
 #endif
 
-
-
 extern u8 __heap_base;
 
 static au32 _abump_atomic;
 
 static au32 _memory_limit;
 
-
 INLINE u32 mem_grow(u32 p)  { return (u32)__builtin_wasm_memory_grow(0, (u64)p); }
 
 INLINE u32 mem_bytes(void)  { return (u32)(__builtin_wasm_memory_size(0) << 16); }
 
 INLINE u8* MP(u32 off)      { return (u8*)(uptr)off; }
-
 
 INLINE u32 aalloc(u32 sz) {
 
@@ -423,14 +383,11 @@ INLINE u32 aalloc(u32 sz) {
 
 }
 
-
-
 #define SLAB_NUM_CLASSES 20u
 
 static u32  _slab_head[SLAB_NUM_CLASSES];
 
 static au32 _slab_lock;
-
 
 INLINE void slab_lock_acquire(void) {
 
@@ -454,11 +411,9 @@ INLINE void slab_lock_release(void) {
 
 }
 
-
 INLINE u32 slab_class(u32 sz) {
 
     if (sz <= 16u) return 0;
-
 
     u32 s = sz - 1u;
 
@@ -480,13 +435,11 @@ INLINE u32 slab_class(u32 sz) {
 
 }
 
-
 INLINE u32 slab_class_size(u32 cls) {
 
     return 16u << cls;
 
 }
-
 
 INLINE u32 blk_alloc(u32 sz, u32 *out_cap) {
 
@@ -495,7 +448,6 @@ INLINE u32 blk_alloc(u32 sz, u32 *out_cap) {
     u32 cls = slab_class(sz);
 
     u32 cap = slab_class_size(cls);
-
 
     slab_lock_acquire();
 
@@ -515,7 +467,6 @@ INLINE u32 blk_alloc(u32 sz, u32 *out_cap) {
 
     slab_lock_release();
 
-
     u32 off = aalloc(cap);
 
     if (UNLIKELY(!off)) { *out_cap = 0; return 0; }
@@ -526,7 +477,6 @@ INLINE u32 blk_alloc(u32 sz, u32 *out_cap) {
 
 }
 
-
 INLINE void blk_free(u32 off, u32 cap) {
 
     if (!off || !cap) return;
@@ -534,7 +484,6 @@ INLINE void blk_free(u32 off, u32 cap) {
     u32 cls = slab_class(cap);
 
     if (slab_class_size(cls) != cap) return;
-
 
     slab_lock_acquire();
 
@@ -545,8 +494,6 @@ INLINE void blk_free(u32 off, u32 cap) {
     slab_lock_release();
 
 }
-
-
 
 INLINE void xcp(u8 *d, const u8 *s, u32 n) {
 
@@ -570,7 +517,6 @@ INLINE void xcp(u8 *d, const u8 *s, u32 n) {
 
 }
 
-
 INLINE void xzero(u8 *d, u32 n) {
 
     u32 i = 0;
@@ -588,7 +534,6 @@ INLINE void xzero(u8 *d, u32 n) {
     for (; i < n; i++) d[i] = 0;
 
 }
-
 
 INLINE i32 xeq(const u8 *a, const u8 *b, u32 n) {
 
@@ -625,7 +570,6 @@ INLINE i32 xeq(const u8 *a, const u8 *b, u32 n) {
     return 1;
 
 }
-
 
 INLINE i32 xcmp(const u8 *a, u32 al, const u8 *b, u32 bl) {
 
@@ -665,14 +609,11 @@ INLINE i32 xcmp(const u8 *a, u32 al, const u8 *b, u32 bl) {
 
 }
 
-
-
 #define RAPID_SEED 0x9e3779b97f4a7c15ULL
 
 #define RAPID_M1   0xa0761d6478bd642fULL
 
 #define RAPID_M2   0xe7037ed1a0b428dbULL
-
 
 INLINE u64 rapid_mix(u64 a, u64 b) {
 
@@ -686,11 +627,9 @@ INLINE u64 rapid_mix(u64 a, u64 b) {
 
 }
 
-
 INLINE u32 rapid_r4(const u8 *p) { u32 v; __builtin_memcpy(&v, p, 4); return v; }
 
 INLINE u64 rapid_r8(const u8 *p) { u64 v; __builtin_memcpy(&v, p, 8); return v; }
-
 
 static u32 rapidhash32(const u8 *p, u32 len) {
 
@@ -740,15 +679,11 @@ static u32 rapidhash32(const u8 *p, u32 len) {
 
 }
 
-
-
 INLINE u8  h2(u32 h)     { return (u8)(h & 0x7Fu); }
 
 INLINE u32 h1(u32 h)     { return h >> 7; }
 
 INLINE u32 hshard(u32 h) { return (h >> (32u - N_SHARDS_SHIFT)) & (N_SHARDS - 1u); }
-
-
 
 INLINE void bloom_set(u8 *bm, u32 h) {
 
@@ -778,7 +713,6 @@ INLINE void bloom_set(u8 *bm, u32 h) {
 
 }
 
-
 INLINE i32 bloom_test(const u8 *bm, u32 h) {
 
     u32 a = (h * 0x9e3779b9u) & BLOOM_MASK;
@@ -801,8 +735,6 @@ INLINE i32 bloom_test(const u8 *bm, u32 h) {
 
 }
 
-
-
 typedef struct __attribute__((packed)) {
 
     u32 koff, voff;
@@ -815,13 +747,11 @@ typedef struct __attribute__((packed)) {
 
 } SLNode;
 
-
 static u32 _sl_base  = 0;
 
 static u32 _sl_count = 0;
 
 static u32 _sl_rand  = 0xdeadbeef;
-
 
 INLINE u32 sl_rnd(void) {
 
@@ -835,7 +765,6 @@ INLINE u32 sl_rnd(void) {
 
 }
 
-
 INLINE u32 sl_lvl(void) {
 
     u32 l = 1, r = sl_rnd();
@@ -846,13 +775,11 @@ INLINE u32 sl_lvl(void) {
 
 }
 
-
 INLINE SLNode* sl_node(u32 i) {
 
     return (SLNode*)MP(_sl_base + (u32)sizeof(SLNode) * i);
 
 }
-
 
 static i32 sl_init(void) {
 
@@ -869,7 +796,6 @@ static i32 sl_init(void) {
     return 1;
 
 }
-
 
 static void sl_insert(u32 koff, u16 klen, u32 voff, u32 vlen) {
 
@@ -917,8 +843,6 @@ static void sl_insert(u32 koff, u16 klen, u32 voff, u32 vlen) {
 
 }
 
-
-
 typedef struct __attribute__((packed)) {
 
     u32 hash;
@@ -943,9 +867,7 @@ typedef struct __attribute__((packed)) {
 
 } Slot;
 
-
 #define SLOT_SZ ((u32)sizeof(Slot))
-
 
 typedef struct {
 
@@ -961,9 +883,7 @@ typedef struct {
 
 } __attribute__((aligned(64))) Shard;
 
-
 _Static_assert(sizeof(Shard) == CACHE_LINE, "sizeof(Shard) != CACHE_LINE");
-
 
 static au64   _ops_total;
 
@@ -975,13 +895,11 @@ static au64   _wal_errors;
 
 static au64   _compactions;
 
-
 INLINE u8*   sh_ctrl(const Shard *sh)        { return MP(sh->ctrl_off); }
 
 INLINE Slot* sh_slot(const Shard *sh, u32 i) { return (Slot*)MP(sh->slot_off + i * SLOT_SZ); }
 
 INLINE u8*   sh_bloom(const Shard *sh)       { return MP(sh->bloom_off); }
-
 
 INLINE const u8* slot_key(const Slot *s) {
 
@@ -997,7 +915,6 @@ INLINE const u8* slot_key(const Slot *s) {
 
 }
 
-
 INLINE u32 slot_key_wasm_off(const Slot *s) {
 
 #if AMORA_INLINE_KEY_MAX > 0
@@ -1012,14 +929,11 @@ INLINE u32 slot_key_wasm_off(const Slot *s) {
 
 }
 
-
-
 #if AMORA_ATOMICS
 
 static _Atomic(u32) _lock_can_wait = 0;
 
 #endif
-
 
 EXPORT void db_set_worker_mode(void) {
 
@@ -1031,7 +945,6 @@ EXPORT void db_set_worker_mode(void) {
 
 }
 
-
 INLINE void shard_lock(Shard *sh) {
 
 #if AMORA_ATOMICS
@@ -1041,7 +954,6 @@ INLINE void shard_lock(Shard *sh) {
     while (!au32_cas_weak_acq_rel(&sh->lock, &zero, 1u)) {
 
         zero = 0;
-
 
         u32 limit = 1u << (spins < 5u ? spins : 5u);
 
@@ -1067,7 +979,6 @@ INLINE void shard_lock(Shard *sh) {
 
 }
 
-
 INLINE void shard_unlock(Shard *sh) {
 
 #if AMORA_ATOMICS
@@ -1084,7 +995,6 @@ INLINE void shard_unlock(Shard *sh) {
 
 }
 
-
 INLINE i32 shard_trylock(Shard *sh) {
 
 #if AMORA_ATOMICS
@@ -1100,8 +1010,6 @@ INLINE i32 shard_trylock(Shard *sh) {
 #endif
 
 }
-
-
 
 INLINE u32 simd_match_byte_aligned(const u8 *ctrl, u32 idx, u8 target) {
 
@@ -1123,18 +1031,15 @@ INLINE u32 simd_match_byte_aligned(const u8 *ctrl, u32 idx, u8 target) {
 
 }
 
-
 INLINE u32 simd_match_empty_aligned(const u8 *ctrl, u32 idx) {
 
     return simd_match_byte_aligned(ctrl, idx, CTRL_EMPTY);
 
 }
 
-
 INLINE u32 simd_match_empty_or_deleted(const u8 *ctrl, u32 idx) {
 
 #if AMORA_SIMD
-
 
     v128_t v = wasm_v128_load(ctrl + idx);
 
@@ -1154,10 +1059,7 @@ INLINE u32 simd_match_empty_or_deleted(const u8 *ctrl, u32 idx) {
 
 }
 
-
-
 static i32 shard_rehash(Shard *sh, u32 nc);
-
 
 INLINE Slot* shard_find(Shard *sh, const u8 *k, u32 kl, u32 fh) {
 
@@ -1180,7 +1082,6 @@ INLINE Slot* shard_find(Shard *sh, const u8 *k, u32 kl, u32 fh) {
     u32 probe_count = 0;
 
     u32 max_probes = sh->cap;
-
 
     while (probe_count < max_probes) {
 
@@ -1228,21 +1129,17 @@ INLINE Slot* shard_find(Shard *sh, const u8 *k, u32 kl, u32 fh) {
 
 }
 
-
 static i32 shard_init(Shard *sh, u32 cap) {
 
     if (UNLIKELY(cap < GROUP_SIZE)) cap = GROUP_SIZE;
 
-
     u32 c = 1; while (c < cap) c <<= 1; cap = c;
-
 
     u32 co = aalloc(cap + GROUP_SIZE); if (!co) return 0;
 
     u32 so = aalloc(cap * SLOT_SZ);   if (!so) return 0;
 
     u32 bo = aalloc(BLOOM_BYTES);      if (!bo) return 0;
-
 
     u8 *ctrl = MP(co);
 
@@ -1258,11 +1155,9 @@ static i32 shard_init(Shard *sh, u32 cap) {
 
     for (; i < cap + GROUP_SIZE; i++) ctrl[i] = CTRL_EMPTY;
 
-
     xzero(MP(so), cap * SLOT_SZ);
 
     xzero(MP(bo), BLOOM_BYTES);
-
 
     sh->ctrl_off = co; sh->slot_off = so; sh->bloom_off = bo;
 
@@ -1274,14 +1169,11 @@ static i32 shard_init(Shard *sh, u32 cap) {
 
 }
 
-
 INLINE i32 shard_needs_tombstone_rehash(const Shard *sh) {
 
     return (sh->deleted * 100u) > (sh->cap * TOMB_RATIO_PCT);
 
 }
-
-
 
 static void shard_rebuild_bloom(Shard *sh) {
 
@@ -1303,14 +1195,11 @@ static void shard_rebuild_bloom(Shard *sh) {
 
 }
 
-
 INLINE i32 shard_set(Shard *sh, const u8 *k, u32 kl, const u8 *v, u32 vl, u32 fh) {
 
     if (UNLIKELY(kl == 0 || kl > MAX_KEY_SIZE))   { au64_fetch_add_relaxed(&_write_errors, 1); return 0; }
 
     if (UNLIKELY((u32)vl > MAX_VALUE_SIZE))             { au64_fetch_add_relaxed(&_write_errors, 1); return 0; }
-
-
 
     if (UNLIKELY((sh->count + sh->deleted + 1u) * LOAD_DEN >= sh->cap * LOAD_NUM)) {
 
@@ -1332,7 +1221,6 @@ INLINE i32 shard_set(Shard *sh, const u8 *k, u32 kl, const u8 *v, u32 vl, u32 fh
 
     }
 
-
     u8  fp    = h2(fh);
 
     u32 idx   = h1(fh) & (sh->cap - 1u);
@@ -1347,7 +1235,6 @@ INLINE i32 shard_set(Shard *sh, const u8 *k, u32 kl, const u8 *v, u32 vl, u32 fh
 
     u32 probe_count = 0;
 
-
     while (probe_count < sh->cap) {
 
         u32 m = simd_match_byte_aligned(ctrl, probe, fp);
@@ -1361,7 +1248,6 @@ INLINE i32 shard_set(Shard *sh, const u8 *k, u32 kl, const u8 *v, u32 vl, u32 fh
             Slot *s = sh_slot(sh, si);
 
             if (LIKELY(s->hash == fh && s->klen == (u16)kl && xeq(slot_key(s), k, kl))) {
-
 
                 if (LIKELY(vl <= s->vcap)) {
 
@@ -1413,10 +1299,7 @@ INLINE i32 shard_set(Shard *sh, const u8 *k, u32 kl, const u8 *v, u32 vl, u32 fh
 
     }
 
-
-
     u32 ko = 0, vo = 0, kcap = 0, vcap = 0;
-
 
     if (AMORA_INLINE_KEY_MAX == 0 || kl > AMORA_INLINE_KEY_MAX) {
 
@@ -1427,7 +1310,6 @@ INLINE i32 shard_set(Shard *sh, const u8 *k, u32 kl, const u8 *v, u32 vl, u32 fh
         xcp(MP(ko), k, kl);
 
     }
-
 
     vo = blk_alloc(vl > 0 ? vl : 1u, &vcap);
 
@@ -1441,16 +1323,13 @@ INLINE i32 shard_set(Shard *sh, const u8 *k, u32 kl, const u8 *v, u32 vl, u32 fh
 
     if (vl > 0) xcp(MP(vo), v, vl);
 
-
     u32 target = (first_del >= 0) ? (u32)first_del : first_empty;
 
     if (first_del >= 0) sh->deleted--;
 
-
     ctrl[target] = fp;
 
     if (target < GROUP_SIZE) ctrl[target + sh->cap] = fp;
-
 
     Slot *s  = sh_slot(sh, target);
 
@@ -1468,13 +1347,11 @@ INLINE i32 shard_set(Shard *sh, const u8 *k, u32 kl, const u8 *v, u32 vl, u32 fh
 
     s->vcap  = vcap;
 
-
 #if AMORA_INLINE_KEY_MAX > 0
 
     if (!ko) xcp(s->ikey, k, kl);
 
 #endif
-
 
     bloom_set(sh_bloom(sh), fh);
 
@@ -1486,13 +1363,11 @@ INLINE i32 shard_set(Shard *sh, const u8 *k, u32 kl, const u8 *v, u32 vl, u32 fh
 
 }
 
-
 INLINE i32 shard_delete(Shard *sh, const u8 *k, u32 kl, u32 fh) {
 
     if (UNLIKELY(kl == 0 || kl > MAX_KEY_SIZE)) return 0;
 
     if (UNLIKELY(!bloom_test(sh_bloom(sh), fh))) return 0;
-
 
     u8  fp   = h2(fh);
 
@@ -1503,7 +1378,6 @@ INLINE i32 shard_delete(Shard *sh, const u8 *k, u32 kl, u32 fh) {
     u8 *ctrl = sh_ctrl(sh);
 
     u32 probe_count = 0;
-
 
     while (probe_count < sh->cap) {
 
@@ -1557,7 +1431,6 @@ INLINE i32 shard_delete(Shard *sh, const u8 *k, u32 kl, u32 fh) {
 
 }
 
-
 INLINE i32 shard_set_adopt(Shard *sh, const Slot *src) {
 
     u32 fh = src->hash;
@@ -1569,7 +1442,6 @@ INLINE i32 shard_set_adopt(Shard *sh, const Slot *src) {
     u32 mask = sh->cap - 1u;
 
     u8 *ctrl = sh_ctrl(sh);
-
 
     while (1) {
 
@@ -1599,21 +1471,17 @@ INLINE i32 shard_set_adopt(Shard *sh, const Slot *src) {
 
 }
 
-
 static i32 shard_rehash(Shard *sh, u32 nc) {
 
     u32 c = 1; while (c < nc) c <<= 1; nc = c;
-
 
     Shard old = *sh;
 
     if (!shard_init(sh, nc)) { *sh = old; return 0; }
 
-
     au64_store_relaxed(&sh->hits,   au64_load_relaxed(&old.hits));
 
     au64_store_relaxed(&sh->misses, au64_load_relaxed(&old.misses));
-
 
     u8 *oc = MP(old.ctrl_off);
 
@@ -1630,7 +1498,6 @@ static i32 shard_rehash(Shard *sh, u32 nc) {
     return 1;
 
 }
-
 
 EXPORT u32 db_gc(void) {
 
@@ -1650,7 +1517,6 @@ EXPORT u32 db_gc(void) {
 
         } else if (sh->deleted > 0) {
 
-
             shard_rebuild_bloom(sh);
 
         }
@@ -1663,8 +1529,6 @@ EXPORT u32 db_gc(void) {
 
 }
 
-
-
 static u32 _wal_off = 0, _wbump = 0, _wact = 0, _wstart = 0;
 
 static u32 _scratch_base = 0;
@@ -1675,16 +1539,13 @@ static u32 _kbuf_off     = 0;
 
 static u32 _vbuf_off     = 0;
 
-
 #define _scratch_off (_scratch_base)
-
 
 extern void js_wal_flush(u32 ptr, u32 len);
 
 extern u32  js_wal_load(u32 ptr, u32 max_len);
 
 extern f64  js_now(void);
-
 
 static void wadd(u8 op, const u8 *k, u32 kl, const u8 *v, u32 vl) {
 
@@ -1744,7 +1605,6 @@ static void wadd(u8 op, const u8 *k, u32 kl, const u8 *v, u32 vl) {
 
 }
 
-
 INLINE void wpu8_commit(void) {
 
     u32 need = 4u + 1u;
@@ -1777,16 +1637,13 @@ INLINE void wpu8_commit(void) {
 
 }
 
-
 static i32 db_wal_replay(void);
-
 
 EXPORT void db_persist(void) {
 
     if (_wbump > WAL_HEADER_SZ) js_wal_flush(_wal_off, _wbump);
 
 }
-
 
 EXPORT i32 db_restore(void) {
 
@@ -1799,8 +1656,6 @@ EXPORT i32 db_restore(void) {
     return db_wal_replay();
 
 }
-
-
 
 EXPORT i32 db_init(u32 cap) {
 
@@ -1820,11 +1675,9 @@ EXPORT i32 db_init(u32 cap) {
 
     au64_store_relaxed(&_compactions, 0);
 
-
     if (!cap) cap = SHARD_INIT;
 
     u32 c = 1; while (c < cap) c <<= 1;
-
 
     _wal_off = aalloc(WAL_MAX);
 
@@ -1838,34 +1691,27 @@ EXPORT i32 db_init(u32 cap) {
 
     _wact = 0;
 
-
     _scratch_base = aalloc(SCRATCH_PER_THREAD * MAX_THREADS);
 
     if (!_scratch_base) return 0;
-
 
     _mget_buf_off = aalloc(MGET_BUF_SZ + 4u);
 
     if (!_mget_buf_off) return 0;
 
-
     _kbuf_off = aalloc(KBUF_SZ * MAX_THREADS);
 
     if (!_kbuf_off) return 0;
-
 
     _vbuf_off = aalloc(VBUF_SZ * MAX_THREADS);
 
     if (!_vbuf_off) return 0;
 
-
     if (!sl_init()) return 0;
-
 
     for (u32 i = 0; i < SLAB_NUM_CLASSES; i++) _slab_head[i] = 0;
 
     au32_store_relaxed(&_slab_lock, 0u);
-
 
     for (u32 i = 0; i < N_SHARDS; i++) {
 
@@ -1877,14 +1723,11 @@ EXPORT i32 db_init(u32 cap) {
 
 }
 
-
 EXPORT void db_set_memory_limit(u32 max_bytes) {
 
     au32_store_relaxed(&_memory_limit, max_bytes);
 
 }
-
-
 
 EXPORT u32 db_kbuf(void)               { return _kbuf_off; }
 
@@ -1903,8 +1746,6 @@ EXPORT u32 mem_alloc(u32 sz)           { return aalloc(sz); }
 EXPORT u32 db_kbuf_thread(u32 tid)     { return _kbuf_off + tid * KBUF_SZ; }
 
 EXPORT u32 db_vbuf_thread(u32 tid)     { return _vbuf_off + tid * VBUF_SZ; }
-
-
 
 EXPORT i32 db_set(u32 kptr, u32 kl, u32 vptr, u32 vl) {
 
@@ -1925,7 +1766,6 @@ EXPORT i32 db_set(u32 kptr, u32 kl, u32 vptr, u32 vl) {
     return r;
 
 }
-
 
 EXPORT i32 db_get(u32 kptr, u32 kl) {
 
@@ -1953,7 +1793,6 @@ EXPORT i32 db_get(u32 kptr, u32 kl) {
 
 }
 
-
 EXPORT i32 db_delete(u32 kptr, u32 kl) {
 
     if (UNLIKELY(kl == 0 || kl > MAX_KEY_SIZE)) return 0;
@@ -1973,7 +1812,6 @@ EXPORT i32 db_delete(u32 kptr, u32 kl) {
     return r;
 
 }
-
 
 EXPORT i32 db_set_inplace(u32 kl, u32 vl) {
 
@@ -1995,7 +1833,6 @@ EXPORT i32 db_set_inplace(u32 kl, u32 vl) {
 
 }
 
-
 EXPORT i32 db_set_inplace_thread(u32 kl, u32 vl, u32 tid) {
 
     if (UNLIKELY(tid >= MAX_THREADS || kl == 0 || kl > KBUF_SZ || vl > VBUF_SZ)) return 0;
@@ -2013,7 +1850,6 @@ EXPORT i32 db_set_inplace_thread(u32 kl, u32 vl, u32 tid) {
     return r;
 
 }
-
 
 EXPORT i32 db_get_inplace(u32 kl) {
 
@@ -2041,7 +1877,6 @@ EXPORT i32 db_get_inplace(u32 kl) {
 
 }
 
-
 EXPORT i32 db_get_inplace_thread(u32 kl, u32 tid) {
 
     if (UNLIKELY(tid >= MAX_THREADS || kl == 0 || kl > KBUF_SZ)) return 0;
@@ -2068,7 +1903,6 @@ EXPORT i32 db_get_inplace_thread(u32 kl, u32 tid) {
 
 }
 
-
 EXPORT i32 db_has_inplace(u32 kl) {
 
     if (UNLIKELY(kl == 0 || kl > KBUF_SZ)) return 0;
@@ -2086,7 +1920,6 @@ EXPORT i32 db_has_inplace(u32 kl) {
     return r;
 
 }
-
 
 EXPORT i32 db_delete_inplace(u32 kl) {
 
@@ -2107,8 +1940,6 @@ EXPORT i32 db_delete_inplace(u32 kl) {
     return r;
 
 }
-
-
 
 EXPORT i32 db_has_prefix(u32 pfx_ptr, u32 pl) {
 
@@ -2150,7 +1981,6 @@ EXPORT i32 db_has_prefix(u32 pfx_ptr, u32 pl) {
 
 }
 
-
 EXPORT u32 db_count_prefix(u32 pfx_ptr, u32 pl) {
 
     if (UNLIKELY(pl == 0 || pl > MAX_KEY_SIZE)) return 0;
@@ -2186,8 +2016,6 @@ EXPORT u32 db_count_prefix(u32 pfx_ptr, u32 pl) {
     return cnt;
 
 }
-
-
 
 EXPORT u32 db_exec_cmdbuf(u32 buf_ptr, u32 total_bytes) {
 
@@ -2253,7 +2081,6 @@ EXPORT u32 db_exec_cmdbuf(u32 buf_ptr, u32 total_bytes) {
 
 }
 
-
 EXPORT u32 db_exec_cmdbuf_thread(u32 buf_ptr, u32 total_bytes, u32 scratch_off_local) {
 
     if (UNLIKELY(!buf_ptr || total_bytes == 0)) return 0;
@@ -2310,7 +2137,6 @@ EXPORT u32 db_exec_cmdbuf_thread(u32 buf_ptr, u32 total_bytes, u32 scratch_off_l
 
 }
 
-
 EXPORT u32 db_mget_cmdbuf(u32 buf_ptr, u32 total_bytes, u32 max_keys) {
 
     if (UNLIKELY(!buf_ptr || total_bytes == 0)) return 0;
@@ -2358,8 +2184,6 @@ EXPORT u32 db_mget_cmdbuf(u32 buf_ptr, u32 total_bytes, u32 max_keys) {
     return n;
 
 }
-
-
 
 EXPORT u32 db_scan_prefix(u32 pfx_ptr, u32 pl) {
 
@@ -2413,7 +2237,6 @@ EXPORT u32 db_scan_prefix(u32 pfx_ptr, u32 pl) {
 
 }
 
-
 EXPORT u32 db_scan_koff(u32 i) { return *(u32*)(MP(_scratch_base) + SCRATCH_RESULTS_OFF + i * 16u + 0u); }
 
 EXPORT u32 db_scan_klen(u32 i) { return *(u32*)(MP(_scratch_base) + SCRATCH_RESULTS_OFF + i * 16u + 4u); }
@@ -2421,7 +2244,6 @@ EXPORT u32 db_scan_klen(u32 i) { return *(u32*)(MP(_scratch_base) + SCRATCH_RESU
 EXPORT u32 db_scan_voff(u32 i) { return *(u32*)(MP(_scratch_base) + SCRATCH_RESULTS_OFF + i * 16u + 8u); }
 
 EXPORT u32 db_scan_vlen(u32 i) { return *(u32*)(MP(_scratch_base) + SCRATCH_RESULTS_OFF + i * 16u + 12u); }
-
 
 static void sl_rebuild(void) {
 
@@ -2458,7 +2280,6 @@ static void sl_rebuild(void) {
 done:;
 
 }
-
 
 EXPORT u32 db_scan_range(u32 from_ptr, u32 fl, u32 to_ptr, u32 tl) {
 
@@ -2510,8 +2331,6 @@ EXPORT u32 db_scan_range(u32 from_ptr, u32 fl, u32 to_ptr, u32 tl) {
 
 }
 
-
-
 typedef struct {
 
     u32 ctrl_snap, slot_snap, bloom_snap;
@@ -2522,7 +2341,6 @@ typedef struct {
 
 } ShardSnap;
 
-
 static ShardSnap _snap[N_SHARDS];
 
 static u8  _cow_dirty[N_SHARDS];
@@ -2530,7 +2348,6 @@ static u8  _cow_dirty[N_SHARDS];
 static u32 _abump_snap = 0;
 
 static u32 _snap_valid = 0;
-
 
 static void cow_snap_shard(u32 si) {
 
@@ -2568,7 +2385,6 @@ static void cow_snap_shard(u32 si) {
 
 }
 
-
 static i32 cow_shard_set(u32 si, const u8 *k, u32 kl, const u8 *v, u32 vl, u32 fh) {
 
     cow_snap_shard(si);
@@ -2577,7 +2393,6 @@ static i32 cow_shard_set(u32 si, const u8 *k, u32 kl, const u8 *v, u32 vl, u32 f
 
 }
 
-
 static i32 cow_shard_delete(u32 si, const u8 *k, u32 kl, u32 fh) {
 
     cow_snap_shard(si);
@@ -2585,7 +2400,6 @@ static i32 cow_shard_delete(u32 si, const u8 *k, u32 kl, u32 fh) {
     return shard_delete(&_shards[si], k, kl, fh);
 
 }
-
 
 EXPORT void db_batch_begin(void) {
 
@@ -2599,7 +2413,6 @@ EXPORT void db_batch_begin(void) {
 
 }
 
-
 EXPORT void db_batch_commit(void) {
 
     wpu8_commit();
@@ -2609,7 +2422,6 @@ EXPORT void db_batch_commit(void) {
     for (u32 i = 0; i < N_SHARDS; i++) _cow_dirty[i] = 0;
 
 }
-
 
 EXPORT void db_batch_rollback(void) {
 
@@ -2648,7 +2460,6 @@ EXPORT void db_batch_rollback(void) {
     _wbump = _wstart; _snap_valid = 0;
 
 }
-
 
 EXPORT u32 db_batch_exec_cmdbuf(u32 buf_ptr, u32 total_bytes) {
 
@@ -2710,8 +2521,6 @@ EXPORT u32 db_batch_exec_cmdbuf(u32 buf_ptr, u32 total_bytes) {
 
 }
 
-
-
 static i32 db_wal_replay(void) {
 
     u32 off = 0; i32 rep = 0;
@@ -2725,7 +2534,6 @@ static i32 db_wal_replay(void) {
     u32 total = prev_wbump;
 
     u64 err_before = au64_load_relaxed(&_wal_errors);
-
 
     if (total >= WAL_HEADER_SZ) {
 
@@ -2741,7 +2549,6 @@ static i32 db_wal_replay(void) {
 
     }
 
-
     while (off + 5u <= total) {
 
         if (off + 4u > total) break;
@@ -2753,7 +2560,6 @@ static i32 db_wal_replay(void) {
         u32 rec_start = off + 4u;
 
         u8 op = wal[rec_start];
-
 
         if (op == WCMT) {
 
@@ -2775,7 +2581,6 @@ static i32 db_wal_replay(void) {
 
         }
 
-
         if (rec_start + 5u > total) break;
 
         u16 kl = (u16)(wal[rec_start + 1] | ((u32)wal[rec_start + 2] << 8u));
@@ -2785,7 +2590,6 @@ static i32 db_wal_replay(void) {
         u32 rec_end = rec_start + 5u + kl + vl;
 
         if (UNLIKELY(rec_end > total)) break;
-
 
         u32 rec_len = rec_end - rec_start;
 
@@ -2801,7 +2605,6 @@ static i32 db_wal_replay(void) {
 
         }
 
-
         if (UNLIKELY(kl == 0 || kl > MAX_KEY_SIZE || (u32)vl > MAX_VALUE_SIZE)) {
 
             au64_fetch_add_relaxed(&_wal_errors, 1);
@@ -2812,13 +2615,11 @@ static i32 db_wal_replay(void) {
 
         }
 
-
         u8 *k = wal + rec_start + 5u;
 
         u8 *v = k + kl;
 
         u32 fh = rapidhash32(k, kl), si = hshard(fh);
-
 
         if (op == WSET) {
 
@@ -2842,7 +2643,6 @@ static i32 db_wal_replay(void) {
 
     }
 
-
     _wbump = WAL_HEADER_SZ;
 
     _wact = prev_wact;
@@ -2852,8 +2652,6 @@ static i32 db_wal_replay(void) {
     return errs > 0 ? -(i32)errs : rep;
 
 }
-
-
 
 EXPORT u32 db_export_snapshot(u32 out_ptr, u32 max_bytes) {
 
@@ -2929,7 +2727,6 @@ done:
 
 }
 
-
 EXPORT u32 db_import_snapshot(u32 in_ptr, u32 len) {
 
     if (UNLIKELY(!in_ptr || len < 16u)) return 0;
@@ -2994,8 +2791,6 @@ EXPORT u32 db_import_snapshot(u32 in_ptr, u32 len) {
 
 }
 
-
-
 EXPORT u32 db_count(void)            { u32 t = 0; for (u32 i = 0; i < N_SHARDS; i++) t += _shards[i].count; return t; }
 
 EXPORT u32 db_capacity(void)         { u32 t = 0; for (u32 i = 0; i < N_SHARDS; i++) t += _shards[i].cap; return t; }
@@ -3034,7 +2829,6 @@ EXPORT u64 db_wal_errors(void)       { return au64_load_relaxed(&_wal_errors); }
 
 EXPORT u64 db_compactions(void)      { return au64_load_relaxed(&_compactions); }
 
-
 EXPORT u32 db_fragmentation_pct(void) {
 
     u32 total_del = 0, total_cap = 0;
@@ -3047,16 +2841,11 @@ EXPORT u32 db_fragmentation_pct(void) {
 
 }
 
-
 EXPORT i32 db_heartbeat(void) { return 1; }
-
-
 
 static f64 _bo[4] __attribute__((aligned(8)));
 
-
 EXPORT u32 db_bench_ptr(void) { return (u32)(uptr)_bo; }
-
 
 EXPORT i32 db_bench(u32 n) {
 
@@ -3067,7 +2856,6 @@ EXPORT i32 db_bench(u32 n) {
     u32 saved_abump = au32_load_relaxed(&_abump_atomic);
 
     for (u32 i = 0; i < N_SHARDS; i++) saved[i] = _shards[i];
-
 
     u32 bc = 131072u;
 
@@ -3086,7 +2874,6 @@ EXPORT i32 db_bench(u32 n) {
     }
 
     _wact = 2;
-
 
     u8 k[12], v[12];
 
@@ -3118,7 +2905,6 @@ EXPORT i32 db_bench(u32 n) {
 
     _bo[0] = js_now() - t;
 
-
     t = js_now();
 
     for (u32 i = 0; i < n; i++) {
@@ -3140,7 +2926,6 @@ EXPORT i32 db_bench(u32 n) {
     }
 
     _bo[1] = js_now() - t;
-
 
     t = js_now();
 
@@ -3164,7 +2949,6 @@ EXPORT i32 db_bench(u32 n) {
 
     _bo[2] = js_now() - t;
 
-
     t = js_now();
 
     u8 pfx[4] = {'k', ':', '0', '0'};
@@ -3172,7 +2956,6 @@ EXPORT i32 db_bench(u32 n) {
     db_scan_prefix((u32)(uptr)pfx, 4u);
 
     _bo[3] = js_now() - t;
-
 
     for (u32 i = 0; i < N_SHARDS; i++) _shards[i] = saved[i];
 
@@ -3183,4 +2966,4 @@ EXPORT i32 db_bench(u32 n) {
     return 1;
 
 }
-
+

@@ -134,18 +134,18 @@ This benchmark covers:
 ### Prerequisites
 
 - Node.js ≥ 18
-- A pre-compiled `amora_core_mt_simd.wasm` (or build from source — see below)
+- Bundled WebAssembly binary (`amora_core_mt_simd.wasm`) when installed from npm (or build from source — see below)
 
 ### Installation
 
 ```bash
-npm install  # no native addons required
+npm install amoradb
 ```
 
 ### Basic Usage
 
 ```js
-const AmoraDB = require('./amora.js');
+const AmoraDB = require('amoradb');
 
 // Open a database (in-memory + optional WAL persistence)
 const db = AmoraDB.open(null, {
