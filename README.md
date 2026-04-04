@@ -110,6 +110,7 @@ node benchmark.js
 - Python 3.x (required by node-gyp on many systems)
 - A working C/C++ toolchain (MSVC on Windows, clang/gcc on macOS/Linux)
   - Windows: Visual Studio 2022 (or Build Tools) with “Desktop development with C++”
+  - Android (Termux, arm64): clang, make, python, and a working Node.js toolchain
 
 ### Installation
 
@@ -140,6 +141,7 @@ db.delete('user:1');
 - Python 3.x (for node-gyp)
 - C++ compiler (gcc/clang/MSVC)
   - Windows: Visual Studio 2022 (or Build Tools) with “Desktop development with C++”
+  - Android (Termux, arm64): `pkg install -y nodejs python make clang`
 
 ### Build
 

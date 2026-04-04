@@ -27,6 +27,7 @@ Please follow our Code of Conduct in all your interactions with the project.
     *   Windows: Visual Studio 2022 (or Build Tools) with “Desktop development with C++”
     *   macOS: Xcode Command Line Tools
     *   Linux: `gcc`/`g++` or `clang`
+    *   Android (Termux, arm64): `pkg install -y nodejs python make clang`
 
 ### Building from Source
 
