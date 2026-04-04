@@ -492,12 +492,6 @@ static napi_value make_uint32(napi_env env, u32 val) {
     return result;
 }
 
-static napi_value make_double(napi_env env, double val) {
-    napi_value result;
-    napi_create_double(env, val, &result);
-    return result;
-}
-
 static napi_value make_string(napi_env env, const char* str) {
     napi_value result;
     napi_create_string_utf8(env, str, NAPI_AUTO_LENGTH, &result);

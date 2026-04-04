@@ -29,6 +29,50 @@ Please follow our Code of Conduct in all your interactions with the project.
     *   Linux: `gcc`/`g++` or `clang`
     *   Android (Termux, arm64): `pkg install -y nodejs python make clang`
 
+### Android (Termux, arm64) Development Guide
+
+This project can be built directly on Android using Termux (arm64). This is the recommended workflow for mobile developers who want to iterate on the native addon.
+
+#### 1) Install build prerequisites
+
+```bash
+pkg update -y
+pkg install -y git nodejs python make clang
+```
+
+#### 2) Clone the repository
+
+```bash
+git clone https://github.com/amoracoin-org/AmoraDb.git
+cd AmoraDb
+```
+
+#### 3) Build (node-gyp)
+
+```bash
+npm install
+```
+
+If you see `gyp: Undefined variable android_ndk_path`, create this file and retry:
+
+```bash
+mkdir -p ~/.gyp
+echo "{'variables':{'android_ndk_path':''}}" > ~/.gyp/include.gypi
+npm install
+```
+
+#### 4) Validate (tests + benchmark)
+
+```bash
+node test.js
+node benchmark.js
+```
+
+### Troubleshooting (Android/Termux)
+
+*   **Build succeeds but crashes at runtime**: Make sure you rebuilt after pulling changes: delete `npm/build/` and rerun `npm install`.
+*   **Slow compilation**: Termux compilation is slower than desktop. Prefer smaller test sizes while iterating and use `node test.js` first.
+
 ### Building from Source
 
 To build the native addon:
@@ -53,11 +97,17 @@ Run the full test suite using Node.js:
 node test.js
 ```
 
-The test suite covers performance benchmarks, stress tests, and core functionality checks.
+The test suite is a sanity and regression harness for the native addon (core API checks, limits, and a stress run).
+
+To run the real-world benchmark:
+
+```bash
+node benchmark.js
+```
 
 ## Coding Standards
 
-### C Core (`amora_core.c`)
+### Native Core (`npm/src/native.c`)
 
 *   Standard C11.
 *   Use `uint8_t`, `uint16_t`, `uint32_t`, `uint64_t`, `uintptr_t` for fixed-width integers and pointers.
