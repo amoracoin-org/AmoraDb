@@ -17,13 +17,13 @@ jobs:
           - os: ubuntu-latest
             platform: linux
             arch: x64
-          - os: ubuntu-latest
+          - os: ubuntu-24.04-arm64
             platform: linux
             arch: arm64
-          - os: macos-latest
+          - os: macos-13
             platform: darwin
             arch: x64
-          - os: macos-latest
+          - os: macos-14
             platform: darwin
             arch: arm64
           - os: windows-latest
@@ -41,8 +41,7 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        working-directory: npm
-        run: npm install
+        run: npm ci
 
       - name: Build Native Addon
         working-directory: npm
@@ -68,23 +67,37 @@ jobs:
         with:
           path: prebuilds
           pattern: prebuild-*
-          merge-multiple: true
+          merge-multiple: false
 
-      - name: Create Release Package
+      - name: Place prebuilds into npm package
         run: |
-          mkdir -p release
-          for dir in prebuilds/*/; do
-            platform=$(basename "$dir" | cut -d'-' -f1)
-            arch=$(basename "$dir" | cut -d'-' -f2)
-            mkdir -p "release/${platform}-${arch}"
-            cp "$dir"*.node "release/${platform}-${arch}/" 2>/dev/null || true
+          mkdir -p npm/prebuilds
+          for dir in prebuilds/prebuild-*/; do
+            base=$(basename "$dir")
+            triplet=${base#prebuild-}
+            mkdir -p "npm/prebuilds/$triplet"
+            cp "$dir"*.node "npm/prebuilds/$triplet/amoradb.node"
           done
-          ls -la release/
+          find npm/prebuilds -maxdepth 2 -type f -name "*.node" -print
 
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          files: release/**/*
+          files: npm/prebuilds/**/*
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js (publish)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies (publish)
+        run: npm ci
+
+      - name: Publish to npm
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

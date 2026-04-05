@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- npm install: use prebuilt `.node` binaries when available, otherwise build via `node-gyp`.
+
+## [2.0.7] - 2026-04-04
+
+### Changed
+- Native addon: `stats()` now includes per-operation counters (`set_ops`, `get_ops`, `has_ops`, `delete_ops`) and `total_ops` counts all API calls.
+
 ## [2.0.6] - 2026-04-04
 
 ### Fixed

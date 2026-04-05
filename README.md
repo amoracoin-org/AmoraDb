@@ -118,6 +118,8 @@ node benchmark.js
 npm install amoradbx
 ```
 
+On supported platforms, the native binary is provided as a prebuilt `.node` file and no build toolchain is required. If no prebuild is available for your platform, the install falls back to building from source (requires python + compiler).
+
 Termux (Android, arm64):
 
 ```bash
@@ -146,6 +148,21 @@ db.get('user:1');         // → 'alice'
 db.has('user:1');         // → true
 db.delete('user:1');
 ```
+
+console.log(db.stats());
+// {
+//   count: 0,
+//   capacity: 4194304,
+//   hits: 2,
+//   misses: 1,
+//   total_ops: 5,
+//   set_ops: 1,
+//   get_ops: 2,
+//   has_ops: 1,
+//   delete_ops: 1,
+//   shards: 64
+// }
+
 
 ---
 

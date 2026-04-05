@@ -53,6 +53,8 @@ cd AmoraDb
 npm install
 ```
 
+If your platform has a prebuilt `.node` binary available, the install will not require a toolchain. Otherwise it will compile from source via `node-gyp`.
+
 If you see `gyp: Undefined variable android_ndk_path`, create this file and retry:
 
 ```bash

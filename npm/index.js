@@ -5,12 +5,13 @@ const path = require('path');
 // Try to load native addon
 let native = null;
 try {
-  native = require('./build/Release/amoradb.node');
+  const prebuilt = './prebuilds/' + process.platform + '-' + process.arch + '/amoradb.node';
+  native = require(prebuilt);
 } catch (e) {
   // Try alternative paths
   const altPaths = [
+    './build/Release/amoradb.node',
     './build/Debug/amoradb.node',
-    './prebuilds/' + process.platform + '-' + process.arch + '/amoradb.node',
   ];
   for (const p of altPaths) {
     try {
@@ -21,7 +22,7 @@ try {
 }
 
 if (!native) {
-  throw new Error('AmoraDB: Native addon not found. Run "npm install" to build.');
+  throw new Error('AmoraDB: Native addon not found. Reinstall to build from source, or use a platform with a prebuilt binary.');
 }
 
 const DEC = new TextDecoder();

@@ -1,6 +1,6 @@
 {
   "name": "amoradbx",
-  "version": "2.0.6",
+  "version": "2.0.8",
   "description": "Ultra-High-Performance Embedded Key-Value Store - Native C addon",
   "main": "npm/index.js",
   "files": [
@@ -9,7 +9,7 @@
     "README.md"
   ],
   "scripts": {
-    "install": "node-gyp rebuild --directory npm",
+    "install": "node npm/install.js",
     "test": "node test.js",
     "bench": "node benchmark.js"
   },

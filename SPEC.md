@@ -36,7 +36,7 @@ This specification describes the current native implementation located under `np
 ## 2. Memory Management
 
 ### 2.1 Heap
-- **Allocator**: A bump allocator backed by a growable heap (`realloc`), aligned to 16 bytes.
+- **Allocator**: A bump allocator backed by a non-moving chunked arena (`malloc`), aligned to 16 bytes.
 - **Lifecycle**: `db_init()` resets the heap by freeing all allocations and reinitializing shards.
 
 ### 2.2 Slab Pooling
@@ -71,6 +71,11 @@ This specification describes the current native implementation located under `np
 - `db.reset(cap?) -> boolean`
 - `db.heartbeat() -> boolean`
 - `db.bench(n?) -> object`
+
+`db.stats()` fields include:
+- `count`, `capacity`, `hits`, `misses`, `shards`
+- `total_ops` (all API calls)
+- `set_ops`, `get_ops`, `has_ops`, `delete_ops`
 
 ## 5. Limits & Constraints
 
