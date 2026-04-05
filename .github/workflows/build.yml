@@ -71,6 +71,7 @@ jobs:
       - name: Build Android (Termux arm64) prebuild
         run: |
           docker run --rm \
+            --platform linux/arm64 \
             -v "${{ github.workspace }}:/work" \
             -w /work \
             termux/termux-docker:aarch64 \
