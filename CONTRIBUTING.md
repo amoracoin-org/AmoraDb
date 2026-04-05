@@ -90,9 +90,8 @@ Release policy: npm publish is blocked unless all required prebuilds are present
 - `linux-arm64`
 - `darwin-x64`
 - `darwin-arm64`
-- `android-arm64`
 
-`android-arm64` is produced by the dedicated CI job **build-android-termux** (Termux-based build path).
+`android-arm64` is produced by the dedicated CI job **build-android-termux** (Termux-based build path). It is currently optional in release gating; if missing, Android falls back to source build during install.
 
 ### Troubleshooting (Android/Termux)
 

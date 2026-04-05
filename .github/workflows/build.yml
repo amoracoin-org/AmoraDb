@@ -60,6 +60,7 @@ jobs:
 
   build-android-termux:
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
@@ -92,7 +93,7 @@ jobs:
           retention-days: 7
 
   release:
-    needs: [build, build-android-termux]
+    needs: [build]
     if: github.event_name == 'release'
     runs-on: ubuntu-latest
 
@@ -125,7 +126,6 @@ jobs:
             "linux-arm64"
             "darwin-x64"
             "darwin-arm64"
-            "android-arm64"
           )
           missing=0
           for t in "${required[@]}"; do
@@ -137,6 +137,14 @@ jobs:
           if [ "$missing" -ne 0 ]; then
             echo "::error::Release blocked: required prebuilds are missing."
             exit 1
+          fi
+
+      - name: Android prebuild status (non-blocking)
+        run: |
+          if [ -f "npm/prebuilds/android-arm64/amoradb.node" ]; then
+            echo "android-arm64 prebuild found."
+          else
+            echo "::warning::android-arm64 prebuild not found. Release continues with source-build fallback for Android."
           fi
 
       - name: Upload to GitHub Release

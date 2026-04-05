@@ -13,9 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - CI workflow now builds and tests native binaries in matrix targets and publishes prebuild artifacts for contributor use.
 - CONTRIBUTING now documents a no-local-toolchain contribution flow using CI prebuild artifacts.
-- Release workflow now blocks npm publish when required prebuild targets (including `android-arm64`) are missing.
+- Release workflow blocks npm publish when required desktop/server prebuild targets are missing.
 - CI now includes a dedicated Termux-based `android-arm64` prebuild job and injects that artifact into release packaging.
 - Android prebuild job now forces `--platform linux/arm64` to run Termux container under QEMU on amd64 runners.
+- Android prebuild is now non-blocking in release gating; missing artifact falls back to source build on install.
 
 ## [2.0.7] - 2026-04-04
 
