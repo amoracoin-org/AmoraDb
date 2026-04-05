@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - npm install: use prebuilt `.node` binaries when available, otherwise build via `node-gyp`.
 
+### Changed
+- CI workflow now builds and tests native binaries in matrix targets and publishes prebuild artifacts for contributor use.
+- CONTRIBUTING now documents a no-local-toolchain contribution flow using CI prebuild artifacts.
+- Release workflow now blocks npm publish when required prebuild targets (including `android-arm64`) are missing.
+- CI now includes a dedicated Termux-based `android-arm64` prebuild job and injects that artifact into release packaging.
+
 ## [2.0.7] - 2026-04-04
 
 ### Changed

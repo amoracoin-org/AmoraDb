@@ -32,6 +32,7 @@ Please follow our Code of Conduct in all your interactions with the project.
 ### Android (Termux, arm64) Development Guide
 
 This project can be built directly on Android using Termux (arm64). This is the recommended workflow for mobile developers who want to iterate on the native addon.
+If you prefer not to install local native toolchain dependencies, use CI-generated prebuild artifacts from pull requests or releases.
 
 #### 1) Install build prerequisites
 
@@ -62,6 +63,36 @@ mkdir -p ~/.gyp
 echo "{'variables':{'android_ndk_path':''}}" > ~/.gyp/include.gypi
 npm install
 ```
+
+### Contributing Without Local Toolchain (CI Prebuild Artifacts)
+
+Use this flow when you want to contribute from Android without installing Python/clang/make locally:
+
+1. Push your branch and open a pull request.
+2. Wait for the workflow **Native CI and Prebuilds** to complete.
+3. Download the artifact named `prebuild-<platform>-<arch>` from the workflow run.
+4. Place the downloaded `amoradb.node` at:
+
+```bash
+npm/prebuilds/<platform>-<arch>/amoradb.node
+```
+
+5. Run validation locally using the downloaded binary:
+
+```bash
+node test.js
+node benchmark.js
+```
+
+Release policy: npm publish is blocked unless all required prebuilds are present:
+- `win32-x64`
+- `linux-x64`
+- `linux-arm64`
+- `darwin-x64`
+- `darwin-arm64`
+- `android-arm64`
+
+`android-arm64` is produced by the dedicated CI job **build-android-termux** (Termux-based build path).
 
 ### Troubleshooting (Android/Termux)
 

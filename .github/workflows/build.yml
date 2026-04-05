@@ -1,4 +1,4 @@
-name: Build Native Addon
+name: Native CI and Prebuilds
 
 on:
   push:
@@ -47,15 +47,51 @@ jobs:
         working-directory: npm
         run: npm run build
 
+      - name: Run tests
+        run: node test.js
+
       - name: Upload prebuild
         uses: actions/upload-artifact@v4
         with:
           name: prebuild-${{ matrix.platform }}-${{ matrix.arch }}
           path: npm/build/Release/*.node
+          if-no-files-found: error
+          retention-days: 7
+
+  build-android-termux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - name: Build Android (Termux arm64) prebuild
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -w /work \
+            termux/termux-docker:aarch64 \
+            bash -lc "
+              pkg update -y &&
+              pkg install -y nodejs-lts python make clang git &&
+              cd npm &&
+              npm install --ignore-scripts &&
+              npm run build
+            "
+
+      - name: Upload prebuild android-arm64
+        uses: actions/upload-artifact@v4
+        with:
+          name: prebuild-android-arm64
+          path: npm/build/Release/*.node
+          if-no-files-found: error
           retention-days: 7
 
   release:
-    needs: build
+    needs: [build, build-android-termux]
     if: github.event_name == 'release'
     runs-on: ubuntu-latest
 
@@ -79,6 +115,28 @@ jobs:
             cp "$dir"*.node "npm/prebuilds/$triplet/amoradb.node"
           done
           find npm/prebuilds -maxdepth 2 -type f -name "*.node" -print
+
+      - name: Validate required prebuilds
+        run: |
+          required=(
+            "win32-x64"
+            "linux-x64"
+            "linux-arm64"
+            "darwin-x64"
+            "darwin-arm64"
+            "android-arm64"
+          )
+          missing=0
+          for t in "${required[@]}"; do
+            if [ ! -f "npm/prebuilds/$t/amoradb.node" ]; then
+              echo "::error::Missing required prebuild: $t"
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            echo "::error::Release blocked: required prebuilds are missing."
+            exit 1
+          fi
 
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v1
